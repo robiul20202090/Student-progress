@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>শিক্ষার্থীর অগ্রগতি — সাপ্তাহিক রিপোর্ট, চেকলিস্ট ও সিলেবাস রিপোর্ট</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f5c4f">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Tiro+Bangla&display=swap" rel="stylesheet">
@@ -1674,6 +1678,11 @@ renderChecklist();
 renderWeekly();
 renderStudentInfo();
 switchTab('weekly');
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
 </script>
 </body>
 </html>
