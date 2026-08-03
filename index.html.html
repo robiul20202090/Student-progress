@@ -1,0 +1,1679 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>শিক্ষার্থীর অগ্রগতি — সাপ্তাহিক রিপোর্ট, চেকলিস্ট ও সিলেবাস রিপোর্ট</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Tiro+Bangla&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1f2a24; --paper:#faf8f3; --panel:#ffffff; --line:#e2ddd0;
+    --accent:#0f5c4f; --muted:#8a8373;
+    --rep-paper:#f7f3ea; --rep-line:#ddd4bf; --rep-track:#e4ddc9; --rep-panel:#fffdf7;
+    --done:#2f7d5f; --progress:#b8863a; --attention:#b23a2e;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--paper); font-family:'Hind Siliguri',sans-serif;
+    color:var(--ink); padding:24px 14px 80px;
+  }
+  .wrap{max-width:900px; margin:0 auto;}
+  h1{
+    font-family:'Tiro Bangla',serif; font-weight:400; font-size:26px;
+    color:var(--accent); margin:0 0 4px;
+  }
+  .sub{color:var(--muted); font-size:13px; margin:0 0 16px;}
+
+  /* Tabs */
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab-btn{
+    font-family:inherit; font-size:13.5px; font-weight:600; color:var(--muted);
+    background:none; border:none; padding:9px 16px; cursor:pointer;
+    border-bottom:2px solid transparent; margin-bottom:-2px;
+  }
+  .tab-btn.active{color:var(--accent); border-bottom-color:var(--accent);}
+  .tab-btn:hover{color:var(--ink);}
+
+  .legend{
+    display:flex; gap:14px; align-items:center; font-size:11.5px; color:var(--muted);
+    margin-bottom:18px; flex-wrap:wrap;
+  }
+  .legend .dot{width:11px;height:11px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle;}
+
+  .top-actions{margin-bottom:10px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .btn{
+    border:1.5px solid var(--accent); background:#fff; color:var(--accent);
+    font-family:inherit; font-size:12.5px; font-weight:600; padding:6px 12px;
+    border-radius:7px; cursor:pointer;
+  }
+  .btn:hover{background:var(--accent); color:#fff;}
+  .btn.ghost{border-color:var(--line); color:var(--muted); font-weight:500;}
+  .btn.ghost:hover{background:#f1ede2; color:var(--ink);}
+  .btn.small{padding:3px 8px; font-size:11px; border-radius:6px;}
+  .btn.danger{border-color:#e5484d; color:#e5484d;}
+  .btn.danger:hover{background:#e5484d; color:#fff;}
+  #fileInput{display:none;}
+
+  .paste-wrap{margin-bottom:14px; display:none;}
+  textarea#pasteArea{
+    width:100%; height:100px; font-family:monospace; font-size:12px;
+    border:1px solid var(--line); border-radius:6px; padding:10px;
+    background:#fff; color:var(--ink);
+  }
+  .paste-actions{margin-top:6px; display:flex; gap:8px;}
+
+  .node{
+    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    margin-bottom:8px; padding:10px 12px;
+  }
+  .node.depth-0{border-left:5px solid var(--nodecolor,#d9d4c4);}
+  .node.depth-1{border-left:4px solid var(--nodecolor,#d9d4c4); background:#fdfcf9;}
+  .node.depth-2plus{border-left:3px solid var(--nodecolor,#d9d4c4); background:#fdfcf9;}
+
+  .node-header{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .collapse-btn{
+    background:none; border:none; cursor:pointer; font-size:13px; color:var(--muted);
+    width:16px; flex:0 0 auto;
+  }
+  .dot{
+    width:12px; height:12px; border-radius:50%; flex:0 0 auto;
+    background:var(--nodecolor,#d9d4c4);
+  }
+  .title-input{
+    border:none; background:transparent; font-family:inherit; font-weight:700;
+    font-size:14px; color:var(--ink); flex:1 1 140px; min-width:80px; padding:2px 2px;
+  }
+  .title-input:focus{outline:none; border-bottom:1.5px solid var(--accent);}
+  .title-static{font-weight:700; font-size:14px; color:var(--ink); flex:1 1 140px;}
+  .progress-text{font-size:11px; color:var(--muted); white-space:nowrap;}
+  .node-actions{display:flex; gap:5px; flex:0 0 auto;}
+
+  .boxes-row{display:flex; gap:5px; flex-wrap:wrap; margin:8px 0 2px 24px;}
+  .qbox{
+    width:24px; height:24px; border-radius:6px; border:1.5px solid var(--line);
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    font-size:12px; font-weight:700; color:#fff; background:#efece2; position:relative;
+  }
+  .qbox.checked{background:#30a46c; border-color:#30a46c;}
+  .qbox .rm{
+    position:absolute; top:-6px; right:-6px; width:14px; height:14px; border-radius:50%;
+    background:#e5484d; color:#fff; font-size:9px; line-height:14px; text-align:center;
+    cursor:pointer; display:none;
+  }
+  .qbox:hover .rm{display:block;}
+
+  .children{margin-left:16px; margin-top:6px;}
+  .empty-hint{font-size:11.5px; color:var(--muted); margin:6px 0 0 24px; font-style:italic;}
+
+  /* ---- Report view ---- */
+  #reportView .sheet{
+    background:var(--rep-panel); border:1px solid var(--rep-line); border-radius:4px;
+    box-shadow:0 1px 3px rgba(32,41,32,0.06); padding:34px 30px 20px;
+  }
+  #reportView header.report-head{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    border-bottom:2px solid var(--ink); padding-bottom:14px; margin-bottom:6px;
+  }
+  #reportView h2{
+    font-family:'Tiro Bangla',serif; font-weight:400; font-size:22px; margin:0; color:var(--ink);
+  }
+  .head-meta{font-size:12px; color:var(--muted); text-align:right; line-height:1.5;}
+  .head-meta b{color:var(--ink); font-weight:600;}
+  .overall-line{
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:12.5px; color:var(--muted); padding:10px 0 18px; letter-spacing:.2px;
+  }
+  .overall-line .num{color:var(--ink); font-weight:700; font-family:'Tiro Bangla',serif; font-size:15px;}
+  .rep-legend{display:flex; gap:16px; font-size:11px; color:var(--muted); margin-bottom:6px; flex-wrap:wrap;}
+  .rep-legend span{display:flex; align-items:center; gap:5px;}
+  .rep-legend i{width:9px;height:9px;border-radius:50%;display:inline-block;}
+
+  .rows{margin-top:8px;}
+  .row{
+    display:grid; grid-template-columns:64px 1fr 92px; gap:16px; align-items:center;
+    padding:16px 0; border-bottom:1px solid var(--rep-line);
+  }
+  .row:last-child{border-bottom:none;}
+  .row.nodata{opacity:.55;}
+
+  .seal{position:relative; width:64px; height:64px; flex:0 0 auto;}
+  .seal svg{width:100%; height:100%; transform:rotate(-90deg);}
+  .seal .pct{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:'Tiro Bangla',serif; font-size:14px; font-weight:400; color:var(--ink);
+  }
+  .seal.nodata .pct{font-size:9px; color:var(--muted); font-family:'Hind Siliguri',sans-serif; font-weight:600; letter-spacing:.3px;}
+
+  .subject-name{font-family:'Tiro Bangla',serif; font-size:16px; color:var(--ink); margin-bottom:6px;}
+  .bar-track{height:6px; border-radius:3px; background:var(--rep-track); overflow:hidden; position:relative;}
+  .bar-fill{height:100%; border-radius:3px;}
+  .row-sub{font-size:11px; color:var(--muted); margin-top:5px;}
+
+  .counts{text-align:right; font-size:13px; font-weight:600; white-space:nowrap;}
+  .counts .frac{font-family:'Tiro Bangla',serif; font-size:15px;}
+  .counts .lbl{display:block; font-size:10.5px; font-weight:500; color:var(--muted); margin-top:2px;}
+
+  .empty-state{max-width:760px; margin:60px auto; text-align:center; color:var(--muted); font-size:13px;}
+
+  /* ---- Weekly progress (month -> week) ---- */
+  .wk-toolbar{margin-bottom:14px; display:flex; flex-direction:column; gap:10px;}
+  .wk-level{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .wk-level-label{font-size:12px; color:var(--muted); font-weight:600; flex:0 0 auto;}
+  .wk-chips{display:flex; gap:6px; flex-wrap:wrap;}
+  .wk-chip{display:flex; align-items:center; gap:3px; border:1.5px solid var(--line); border-radius:20px; padding:2px 4px 2px 10px; background:#fff; cursor:pointer;}
+  .wk-chip.active{border-color:var(--accent); background:var(--accent);}
+  .wk-chip.active .wk-chip-input{color:#fff;}
+  .wk-chip-input{border:none; background:transparent; font-family:inherit; font-size:12.5px; font-weight:600; color:var(--ink); width:76px; padding:3px 2px;}
+  .wk-chip-input:focus{outline:none;}
+  .wk-chip-del{border:none; background:rgba(0,0,0,0.08); color:var(--muted); width:17px; height:17px; border-radius:50%; font-size:10px; cursor:pointer; line-height:1; flex:0 0 auto;}
+  .wk-chip.active .wk-chip-del{background:rgba(255,255,255,0.28); color:#fff;}
+  .wk-chip.active span{color:#fff;}
+  .wk-chip-del:hover{background:#e5484d; color:#fff;}
+
+  .btn-edit-toggle{font-family:inherit; font-size:11.5px; padding:4px 12px; border:1.5px solid var(--accent); border-radius:16px; background:#fff; color:var(--accent); cursor:pointer; margin-left:8px; white-space:nowrap; transition:background .15s;}
+  .btn-edit-toggle.active{background:var(--accent); color:#fff;}
+  .btn-edit-toggle:hover{background:var(--accent); color:#fff;}
+
+  .wk-sheet{background:var(--rep-panel); border:1px solid var(--rep-line); border-radius:14px; overflow:hidden; box-shadow:0 1px 3px rgba(20,20,10,0.04);}
+  .wk-head{background:linear-gradient(120deg,#0f5c4f 0%, #17795f 60%, #2e9c7d 100%); color:#f2fbf7; padding:22px 26px 18px;}
+  .wk-head .eyebrow{font-family:'Tiro Bangla',serif; font-size:13px; letter-spacing:.08em; opacity:.85; margin:0 0 4px;}
+  .wk-head h2{font-family:'Tiro Bangla',serif; font-size:24px; margin:0; font-weight:400;}
+  .wk-meta-row{display:flex; flex-wrap:wrap; gap:16px 26px; padding:16px 26px; border-bottom:1px solid var(--rep-line); background:#fbfaf6;}
+  .wk-meta-field{display:flex; flex-direction:column; gap:4px; flex:1; min-width:150px;}
+  .wk-meta-field label{font-size:11px; color:var(--muted);}
+  .wk-meta-field input{border:none; border-bottom:1.5px solid var(--rep-line); background:transparent; font-family:inherit; font-size:13.5px; padding:3px 2px; color:var(--ink); width:100%;}
+  .wk-meta-field input:focus{outline:none; border-bottom-color:var(--accent);}
+  .wk-meta-field > div{font-size:13.5px; border-bottom:1.5px solid var(--rep-line); padding:3px 2px; min-height:20px;}
+  .wk-legend{display:flex; align-items:center; gap:10px; padding:10px 26px; font-size:11px; color:var(--muted); flex-wrap:wrap;}
+  .wk-legend .swatch{display:inline-block; width:12px; height:8px; border-radius:3px; margin-right:4px; vertical-align:middle;}
+  .wk-table{width:100%; border-collapse:collapse;}
+  .wk-table-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  .wk-table-scroll .wk-table{min-width:640px;}
+  .wk-scroll-hint{display:none; font-size:11px; color:var(--muted); padding:5px 26px 0; text-align:right;}
+  @media (max-width:700px){
+    .wk-scroll-hint{display:block;}
+  }
+  .wk-table thead th{background:var(--accent); color:#fff; font-weight:500; font-size:12px; text-align:left; padding:8px 10px;}
+  .wk-table thead th input.th-label-input{
+    width:100%; background:transparent; border:none; border-bottom:1.5px solid rgba(255,255,255,.6);
+    color:#fff; font-family:inherit; font-size:12px; font-weight:500; padding:2px;
+  }
+  .wk-table thead th input.th-label-input:focus{outline:none; border-bottom-color:#fff;}
+  .wk-table tbody td{padding:7px 9px; border-bottom:1px solid var(--rep-line); font-size:13px; vertical-align:middle;}
+  .wk-table tbody tr.wk-day-start td{border-top:2px solid #d9efe7;}
+  .wk-day-cell{font-weight:600; color:var(--accent); white-space:nowrap;}
+  .wk-subject-cell{font-weight:500;}
+  .wk-topic-input, .wk-remark-input{width:100%; border:none; border-bottom:1px solid var(--rep-line); background:transparent; font-family:inherit; font-size:12.5px; padding:3px 2px; color:var(--ink);}
+  .wk-topic-input:focus, .wk-remark-input:focus{outline:none; border-bottom-color:var(--accent);}
+  .wk-score-cell{min-width:104px;}
+  .wk-score-wrap{display:flex; align-items:center; gap:6px;}
+  .wk-score-input{width:30px; text-align:center; border:1px solid var(--rep-line); border-radius:6px; font-family:inherit; font-size:12.5px; padding:2px; color:var(--ink);}
+  .wk-score-input:focus{outline:none; border-color:var(--accent);}
+  .wk-bar-track{flex:1; height:7px; background:var(--rep-track); border-radius:4px; overflow:hidden; min-width:40px;}
+  .wk-bar-fill{height:100%; border-radius:4px; transition:width .2s ease, background .2s ease;}
+  .wk-summary{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; padding:18px 26px 8px;}
+  .wk-stat{background:#fbfaf6; border:1px solid var(--rep-line); border-radius:10px; padding:12px 14px;}
+  .wk-stat .num{font-family:'Tiro Bangla',serif; font-size:22px; color:var(--accent);}
+  .wk-stat .lbl{font-size:11px; color:var(--muted); margin-top:2px;}
+  .wk-notes{padding:4px 26px 24px; display:grid; grid-template-columns:1fr 1fr; gap:14px 20px;}
+  .wk-notes .field{display:flex; flex-direction:column; gap:5px;}
+  .wk-notes label{font-size:11.5px; color:var(--muted);}
+  .wk-notes textarea{border:1px solid var(--rep-line); border-radius:8px; font-family:inherit; font-size:13px; padding:7px 9px; resize:vertical; min-height:40px; background:#fdfcf9; width:100%;}
+  .wk-notes textarea:focus{outline:none; border-color:var(--accent);}
+  .wk-charts{padding:6px 26px 22px; border-top:1px solid var(--rep-line); background:#fbfaf6;}
+  .wk-charts-title{font-family:'Tiro Bangla',serif; font-weight:400; font-size:16px; color:var(--accent); margin:10px 0 10px;}
+  .wk-day-charts-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:10px;}
+  .wk-day-chart-card{background:#fff; border:1px solid var(--rep-line); border-radius:10px; padding:9px 10px;}
+  .wk-day-chart-title{font-weight:700; font-size:12px; color:var(--accent); margin-bottom:3px;}
+  .wk-mini-row{display:flex; gap:6px;}
+  .wk-mini-block{flex:1; text-align:center;}
+  .wk-mini-label{font-size:10px; color:var(--muted); margin-bottom:2px;}
+  .wk-mini-svg{width:100%; height:auto;}
+  .wk-overview-box{margin-top:14px; background:#fff; border:1px solid var(--rep-line); border-radius:10px; padding:12px 14px;}
+  .wk-overview-title{font-family:'Tiro Bangla',serif; font-weight:400; font-size:14px; margin:0 0 6px;}
+  .wk-overview-svg{width:100%; height:auto;}
+  .wk-sheet-wrap{margin-bottom:10px;}
+
+  .student-info-panel{background:#fbfaf6; border:1px solid var(--line); border-radius:12px; padding:16px 20px; margin-bottom:16px;}
+  .student-info-panel h3{margin:0 0 12px; font-family:'Tiro Bangla',serif; font-size:16px; color:var(--ink);}
+  .student-info-row{display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:10px;}
+  .student-info-field{display:flex; flex-direction:column; gap:4px;}
+  .student-info-field label{font-size:12px; font-weight:600; color:var(--muted);}
+  .student-info-field input{border:1.5px solid var(--line); border-radius:8px; padding:6px 10px; font-family:inherit; font-size:13.5px; background:#fff; color:var(--ink);}
+  .student-info-field input:focus{outline:none; border-color:var(--accent);}
+
+  @media print{
+    body{padding:0; background:#fff;}
+    .tabs, .top-actions, .paste-wrap, .legend, .wk-toolbar{display:none !important;}
+    #reportView .sheet{box-shadow:none; border:none;}
+    .wk-sheet{box-shadow:none; border:none;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>শিক্ষার্থীর অগ্রগতি রিপোর্ট</h1>
+  <p class="sub">প্রথমে সাপ্তাহিক অগ্রগতি প্রতিবেদন, তারপর সিলেবাস চেকলিস্ট, এবং সবশেষে সিলেবাস অগ্রগতি রিপোর্ট — একই জায়গায়।</p>
+
+  <div class="top-actions">
+    <button class="btn" id="guardianShareBtn" onclick="shareFullReportForGuardian()">📤 অভিভাবকের জন্য সম্পূর্ণ রিপোর্ট শেয়ার করুন</button>
+    <button class="btn ghost" onclick="exportJSON()">💾 সম্পূর্ণ ব্যাকআপ এক্সপোর্ট করুন</button>
+    <button class="btn ghost" onclick="document.getElementById('fileInput').click()">📥 ব্যাকআপ ইমপোর্ট করুন</button>
+    <input type="file" id="fileInput" accept="application/json,.json">
+    <button class="btn ghost" id="togglePaste">অথবা পেস্ট করে ইমপোর্ট</button>
+  </div>
+  <p class="sub" style="margin-top:-4px;">শেয়ার বাটনে তিনটা অংশ (সাপ্তাহিক প্রতিবেদন — সব মাস ও সপ্তাহসহ, চেকলিস্ট, সিলেবাস রিপোর্ট) নিয়ে একটা "শুধু দেখার" ফাইল তৈরি হবে — এটা অভিভাবককে পাঠান। আর ব্যাকআপ এক্সপোর্ট/ইমপোর্ট দিয়ে পুরো অ্যাপের ডেটা (সব মাস/সপ্তাহ + চেকলিস্ট) অন্য ডিভাইসে নিয়ে যেতে পারবেন।</p>
+
+  <div class="paste-wrap" id="pasteWrap">
+    <textarea id="pasteArea" placeholder="এখানে এক্সপোর্ট করা JSON পেস্ট করুন..."></textarea>
+    <div class="paste-actions">
+      <button class="btn" onclick="importFromPaste()">লোড করুন</button>
+    </div>
+  </div>
+
+  <div class="student-info-panel" id="studentInfoPanel">
+    <h3>শিক্ষার্থীর তথ্য</h3>
+    <div class="student-info-row">
+      <div class="student-info-field">
+        <label>শিক্ষার্থীর নাম</label>
+        <input type="text" id="siStudentName" placeholder="নাম লিখুন">
+      </div>
+      <div class="student-info-field">
+        <label>শ্রেণি</label>
+        <input type="text" id="siClassInfo" placeholder="যেমন: ৫ম শ্রেণি">
+      </div>
+      <div class="student-info-field">
+        <label>বিদ্যালয়ের নাম</label>
+        <input type="text" id="siSchoolName" placeholder="স্কুলের নাম">
+      </div>
+      <div class="student-info-field">
+        <label>শিক্ষকের নাম</label>
+        <input type="text" id="siTeacherName" placeholder="শিক্ষকের নাম">
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tabWeeklyBtn" onclick="switchTab('weekly')">📅 সাপ্তাহিক অগ্রগতি প্রতিবেদন</button>
+    <button class="tab-btn" id="tabChecklistBtn" onclick="switchTab('checklist')">✅ চেকলিস্ট</button>
+    <button class="tab-btn" id="tabReportBtn" onclick="switchTab('report')">📊 সিলেবাস অগ্রগতি রিপোর্ট</button>
+  </div>
+
+  <!-- ===== WEEKLY PROGRESS REPORT VIEW ===== -->
+  <div id="weeklyView">
+    <div class="wk-toolbar">
+      <div class="wk-level">
+        <span class="wk-level-label">মাস:</span>
+        <div class="wk-chips" id="monthChips"></div>
+        <button class="btn small" onclick="addMonth()">+ নতুন মাস</button>
+        <button class="btn-edit-toggle" id="btnEditNames" onclick="toggleEditNames()">✏️ নাম বদলান</button>
+      </div>
+      <div class="wk-level">
+        <span class="wk-level-label">সপ্তাহ:</span>
+        <div class="wk-chips" id="weekChips"></div>
+        <button class="btn small" onclick="addWeek()">+ নতুন সপ্তাহ</button>
+        <button class="btn small" onclick="addNextWeek()">➜ পরবর্তী সপ্তাহে যান</button>
+      </div>
+    </div>
+    <div class="wk-sheet-wrap">
+      <button class="btn ghost small" onclick="window.print()" style="margin-bottom:10px;">🖨️ প্রিন্ট করুন</button>
+      <div id="weeklySheet"></div>
+    </div>
+  </div>
+
+  <!-- ===== CHECKLIST VIEW ===== -->
+  <div id="checklistView" style="display:none;">
+    <div class="legend">
+      <span><span class="dot" style="background:#e5484d"></span>শুরু হয়নি</span>
+      <span><span class="dot" style="background:#f0a83c"></span>চলছে</span>
+      <span><span class="dot" style="background:#30a46c"></span>সম্পূর্ণ</span>
+      <span><span class="dot" style="background:#d9d4c4"></span>কোনো বক্স নেই</span>
+    </div>
+
+    <div class="top-actions">
+      <button class="btn" onclick="addTopSection()">+ নতুন বিষয় যোগ করুন</button>
+    </div>
+
+    <div id="tree"></div>
+  </div>
+
+  <!-- ===== REPORT VIEW ===== -->
+  <div id="reportView" style="display:none;">
+    <div class="top-actions">
+      <button class="btn ghost" onclick="window.print()">🖨️ প্রিন্ট করুন</button>
+    </div>
+    <div id="reportContent"></div>
+  </div>
+</div>
+
+<script>
+/* ================= shared state / tabs ================= */
+const STORAGE_KEY = 'syllabus_checklist_tree_v1';
+const STUDENT_INFO_KEY = 'student_info_v1';
+let activeTab = 'weekly';
+
+let studentInfo;
+try {
+  const raw = localStorage.getItem(STUDENT_INFO_KEY);
+  studentInfo = raw ? JSON.parse(raw) : {studentName:'', classInfo:'', schoolName:'', teacherName:''};
+} catch(e){
+  studentInfo = {studentName:'', classInfo:'', schoolName:'', teacherName:''};
+}
+function saveStudentInfo(){ try{ localStorage.setItem(STUDENT_INFO_KEY, JSON.stringify(studentInfo)); }catch(e){} }
+
+function switchTab(tab){
+  activeTab = tab;
+  document.getElementById('tabWeeklyBtn').classList.toggle('active', tab==='weekly');
+  document.getElementById('tabChecklistBtn').classList.toggle('active', tab==='checklist');
+  document.getElementById('tabReportBtn').classList.toggle('active', tab==='report');
+  document.getElementById('weeklyView').style.display = tab==='weekly' ? 'block' : 'none';
+  document.getElementById('checklistView').style.display = tab==='checklist' ? 'block' : 'none';
+  document.getElementById('reportView').style.display = tab==='report' ? 'block' : 'none';
+  if(tab === 'report') renderReport();
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : str;
+  return div.innerHTML;
+}
+
+/* ================= CHECKLIST ================= */
+function uid(){ return 'n' + Math.random().toString(36).slice(2,9); }
+function node(title, children=[], boxes=[]){ return {id:uid(), title, children, boxes, collapsed:false}; }
+
+function seedData(){
+  return [
+    node('কুরআন মাজীদ ও তাজভীদ শিক্ষা', [
+      node('সূরা আছর', [], [false]),
+      node('মীম সাকিন', [], [false]),
+      node('হাদিস', [], [false,false,false,false]),
+    ]),
+    node('আরবি ১ম পত্র', [
+      node('কবিতা', [], [false]),
+      node('প্রশ্নোত্তর', [
+        node('গদ্য', [], [false,false,false,false,false]),
+        node('পদ্য', [], [false,false,false,false,false]),
+      ]),
+      node('শব্দার্থ', [], [false]),
+      node('বাক্য গঠন', [], [false]),
+      node('বাংলায় অনুবাদ', [], [false]),
+      node('اسم فعل حرف বের করা', [], [false]),
+      node('শূন্যস্থান পূরণ', [], [false]),
+    ]),
+    node('আরবি ২য় পত্র (ব্যাকরণ)', [
+      node('প্রশ্নোত্তর', [], [false]),
+      node('আরবি করা', [], [false]),
+      node('বাংলা করা', [], [false]),
+      node('রচনা', [], [false]),
+    ]),
+    node('বাংলা', [
+      node('গদ্য', [ node('শব্দার্থ', [], [false]), node('রচনামূলক/বর্ণনামূলক', [], [false]) ]),
+      node('পদ্য', [ node('শব্দার্থ', [], [false]), node('সারমর্ম', [], [false]) ]),
+      node('ব্যাকরণ', [ node('সমাস, কারক', [], [false]), node('বিপরীত শব্দ', [], [false]) ]),
+    ]),
+    node('English', [
+      node('Word meaning', [], [false]),
+      node('Questions', [], [false]),
+      node('Fill in the gaps', [], [false]),
+      node('True/False', [], [false]),
+      node('Grammar', [], [false]),
+      node('Paragraph', [], [false]),
+    ]),
+    node('গণিত', [
+      node('গুণিতক ও গুণনীয়ক', [], [false]),
+      node('সাধারণ ভগ্নাংশ', [], [false]),
+      node('জ্যামিতি (ত্রিভুজ ও প্রকারভেদ)', [], [false]),
+    ]),
+    node('বাংলাদেশ ও বিশ্বপরিচয়', [
+      node('সংক্ষিপ্ত প্রশ্নোত্তর', [], [false]),
+      node('বর্ণনামূলক প্রশ্নোত্তর', [], [false]),
+      node('সঠিক উত্তর/শূন্যস্থান/মিল', [], [false]),
+    ]),
+    node('বিজ্ঞান', [
+      node('সংক্ষিপ্ত প্রশ্নোত্তর', [], [false]),
+      node('বর্ণনামূলক প্রশ্নোত্তর', [], [false]),
+      node('সঠিক উত্তর/শূন্যস্থান/মিল', [], [false]),
+    ]),
+  ];
+}
+
+let data;
+try {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  data = raw ? JSON.parse(raw) : seedData();
+} catch(e){
+  data = seedData();
+}
+
+function save(){
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e){}
+}
+
+function findNode(list, id){
+  for(const n of list){
+    if(n.id === id) return n;
+    const found = findNode(n.children, id);
+    if(found) return found;
+  }
+  return null;
+}
+function findParentArray(list, id, parentArr=null){
+  for(const n of list){
+    if(n.id === id) return list;
+    const res = findParentArray(n.children, id, n.children);
+    if(res) return res;
+  }
+  return null;
+}
+
+function computeProgress(n){
+  let total = 0, checked = 0;
+  n.boxes.forEach(b => { total++; if(b) checked++; });
+  n.children.forEach(c => {
+    const p = computeProgress(c);
+    total += p.total; checked += p.checked;
+  });
+  return {checked, total};
+}
+
+function colorFor(checked, total){
+  if(total === 0) return '#d9d4c4';
+  const t = checked / total;
+  const hue = t * 142;
+  return `hsl(${hue}, 68%, 45%)`;
+}
+
+function addTopSection(){
+  data.push(node('নতুন বিষয়'));
+  save(); renderChecklist();
+}
+
+function addChild(parentId){
+  const n = findNode(data, parentId);
+  n.children.push(node('নতুন ধাপ'));
+  n.collapsed = false;
+  save(); renderChecklist();
+}
+
+function addBox(parentId){
+  const n = findNode(data, parentId);
+  n.boxes.push(false);
+  save(); renderChecklist();
+}
+
+function removeBox(parentId, idx){
+  const n = findNode(data, parentId);
+  n.boxes.splice(idx, 1);
+  save(); renderChecklist();
+}
+function removeLastBox(parentId){
+  const n = findNode(data, parentId);
+  if(!n.boxes.length){ alert('এই অংশে কোনো বক্স নেই।'); return; }
+  n.boxes.pop();
+  save(); renderChecklist();
+}
+
+function toggleBox(parentId, idx){
+  const n = findNode(data, parentId);
+  n.boxes[idx] = !n.boxes[idx];
+  save(); renderChecklist();
+}
+
+function toggleCollapse(id){
+  const n = findNode(data, id);
+  n.collapsed = !n.collapsed;
+  save(); renderChecklist();
+}
+
+function renameNode(id, val){
+  const n = findNode(data, id);
+  n.title = val;
+  save();
+}
+
+function cloneWithNewIds(n){
+  return {
+    id: uid(),
+    title: n.title,
+    collapsed: n.collapsed,
+    boxes: n.boxes.map(b => b),
+    children: n.children.map(c => cloneWithNewIds(c)),
+  };
+}
+
+function duplicateNode(id){
+  const original = findNode(data, id);
+  const arr = findParentArray(data, id) || data;
+  const idx = arr.findIndex(n => n.id === id);
+  const copy = cloneWithNewIds(original);
+  copy.title = original.title + ' (কপি)';
+  arr.splice(idx + 1, 0, copy);
+  save(); renderChecklist();
+}
+
+function deleteNode(id){
+  if(!confirm('এই অংশটা মুছে ফেলতে চান?')) return;
+  const arr = findParentArray(data, id) || data;
+  const idx = arr.findIndex(n => n.id === id);
+  if(idx > -1) arr.splice(idx, 1);
+  save(); renderChecklist();
+}
+
+function depthClass(depth){
+  if(depth === 0) return 'depth-0';
+  if(depth === 1) return 'depth-1';
+  return 'depth-2plus';
+}
+
+function renderNode(n, depth){
+  const p = computeProgress(n);
+  const color = colorFor(p.checked, p.total);
+  const hasKids = n.children.length > 0;
+  const hasBoxes = n.boxes.length > 0;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'node ' + depthClass(depth);
+  wrap.style.setProperty('--nodecolor', color);
+
+  const header = document.createElement('div');
+  header.className = 'node-header';
+
+  const collapseBtn = document.createElement('button');
+  collapseBtn.className = 'collapse-btn';
+  collapseBtn.textContent = (hasKids || hasBoxes) ? (n.collapsed ? '▸' : '▾') : '·';
+  collapseBtn.onclick = () => toggleCollapse(n.id);
+  header.appendChild(collapseBtn);
+
+  const dot = document.createElement('span');
+  dot.className = 'dot';
+  header.appendChild(dot);
+
+  const titleInput = document.createElement('input');
+  titleInput.className = 'title-input';
+  titleInput.value = n.title;
+  titleInput.oninput = (e) => renameNode(n.id, e.target.value);
+  header.appendChild(titleInput);
+
+  const progText = document.createElement('span');
+  progText.className = 'progress-text';
+  progText.textContent = p.total > 0 ? `${p.checked}/${p.total}` : '—';
+  header.appendChild(progText);
+
+  const actions = document.createElement('div');
+  actions.className = 'node-actions';
+
+  const addChildBtn = document.createElement('button');
+  addChildBtn.className = 'btn small';
+  addChildBtn.textContent = '+ ধাপ';
+  addChildBtn.onclick = () => addChild(n.id);
+  actions.appendChild(addChildBtn);
+
+  const addBoxBtn = document.createElement('button');
+  addBoxBtn.className = 'btn small ghost';
+  addBoxBtn.textContent = '+ বক্স';
+  addBoxBtn.onclick = () => addBox(n.id);
+  actions.appendChild(addBoxBtn);
+
+  const removeLastBoxBtn = document.createElement('button');
+  removeLastBoxBtn.className = 'btn small ghost';
+  removeLastBoxBtn.textContent = '— বক্স';
+  removeLastBoxBtn.title = 'শেষের বক্সটি মুছে ফেলুন';
+  removeLastBoxBtn.onclick = () => removeLastBox(n.id);
+  actions.appendChild(removeLastBoxBtn);
+
+  const dupBtn = document.createElement('button');
+  dupBtn.className = 'btn small ghost';
+  dupBtn.textContent = '⧉ কপি';
+  dupBtn.title = 'এই অংশটা (এর ভেতরের সব ধাপ ও বক্সসহ) হুবহু কপি করে পাশে বসাবে';
+  dupBtn.onclick = () => duplicateNode(n.id);
+  actions.appendChild(dupBtn);
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'btn small danger';
+  delBtn.textContent = '✕';
+  delBtn.onclick = () => deleteNode(n.id);
+  actions.appendChild(delBtn);
+
+  header.appendChild(actions);
+  wrap.appendChild(header);
+
+  if(!n.collapsed){
+    if(hasBoxes){
+      const boxRow = document.createElement('div');
+      boxRow.className = 'boxes-row';
+      n.boxes.forEach((checked, idx) => {
+        const b = document.createElement('div');
+        b.className = 'qbox' + (checked ? ' checked' : '');
+        b.textContent = checked ? '✓' : (idx+1);
+        b.onclick = () => toggleBox(n.id, idx);
+        boxRow.appendChild(b);
+      });
+      wrap.appendChild(boxRow);
+    }
+
+    if(hasKids){
+      const childWrap = document.createElement('div');
+      childWrap.className = 'children';
+      n.children.forEach(c => childWrap.appendChild(renderNode(c, depth+1)));
+      wrap.appendChild(childWrap);
+    }
+
+    if(!hasKids && !hasBoxes){
+      const hint = document.createElement('div');
+      hint.className = 'empty-hint';
+      hint.textContent = 'এখনো কিছু যোগ করা হয়নি — "+ ধাপ" বা "+ বক্স" চাপুন';
+      wrap.appendChild(hint);
+    }
+  }
+
+  return wrap;
+}
+
+function renderChecklist(){
+  const tree = document.getElementById('tree');
+  tree.innerHTML = '';
+  data.forEach(n => tree.appendChild(renderNode(n, 0)));
+}
+
+function buildLockedNodeHTML(n, depth){
+  const p = computeProgress(n);
+  const color = colorFor(p.checked, p.total);
+  const hasKids = n.children.length > 0;
+  const hasBoxes = n.boxes.length > 0;
+  const hasChildren = hasKids || hasBoxes;
+  const boxesHtml = hasBoxes ? `<div class="boxes-row">${n.boxes.map((c,i)=>`<div class="qbox${c?' checked':''}" style="cursor:default;">${c?'✓':(i+1)}</div>`).join('')}</div>` : '';
+  const childrenHtml = hasKids ? `<div class="children">${n.children.map(c=>buildLockedNodeHTML(c, depth+1)).join('')}</div>` : '';
+  const collapsible = hasChildren ? `<div class="g-collapse-content collapsed">${boxesHtml}${childrenHtml}</div>` : (boxesHtml + childrenHtml);
+  const toggleBtn = hasChildren ? `<button class="g-collapse-btn" onclick="gToggleCollapse(this)" type="button" aria-label="বিস্তারিত দেখুন">▶ বিস্তারিত দেখুন</button>` : '';
+  return `<div class="node ${depthClass(depth)}" style="--nodecolor:${color};">
+    <div class="node-header">
+      <span class="dot"></span>
+      <span class="title-static">${escapeHtml(n.title)}</span>
+      <span class="progress-text" style="margin-left:auto;">${p.total>0?`${p.checked}/${p.total}`:'—'}</span>
+      ${toggleBtn}
+    </div>
+    ${collapsible}
+  </div>`;
+}
+function buildLockedChecklistHTML(){
+  if(!data.length) return `<div class="empty-state">এখনো কোনো বিষয় যোগ করা হয়নি।</div>`;
+  return data.map(n=>buildLockedNodeHTML(n,0)).join('');
+}
+
+/* ================= REPORT (reads `data` directly) ================= */
+function statusColor(pct, total){
+  if(total === 0) return 'var(--muted)';
+  if(pct >= 1) return 'var(--done)';
+  if(pct <= 0.2) return 'var(--attention)';
+  return 'var(--progress)';
+}
+
+function ring(pct, total, color){
+  const r = 26, c = 2*Math.PI*r;
+  if(total === 0){
+    return `<svg viewBox="0 0 64 64">
+      <circle cx="32" cy="32" r="${r}" fill="none" stroke="var(--rep-track)" stroke-width="6" stroke-dasharray="4 5"/>
+    </svg>`;
+  }
+  const offset = c * (1 - pct);
+  return `<svg viewBox="0 0 64 64">
+    <circle cx="32" cy="32" r="${r}" fill="none" stroke="var(--rep-track)" stroke-width="6"/>
+    <circle cx="32" cy="32" r="${r}" fill="none" stroke="${color}" stroke-width="6"
+      stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${offset}"/>
+  </svg>`;
+}
+
+function buildReportMarkup(){
+  if(!data || data.length === 0){
+    return `<div class="empty-state">এখনো কোনো বিষয় যোগ করা হয়নি — "চেকলিস্ট" ট্যাবে গিয়ে শুরু করুন।</div>`;
+  }
+
+  const subjects = data.map(n => {
+    const p = computeProgress(n);
+    const pct = p.total > 0 ? p.checked / p.total : 0;
+    return {title: n.title, checked: p.checked, total: p.total, pct};
+  });
+
+  subjects.sort((a,b) => {
+    const aScore = a.total === 0 ? -1 : a.pct;
+    const bScore = b.total === 0 ? -1 : b.pct;
+    return aScore - bScore;
+  });
+
+  const totalChecked = subjects.reduce((s,x)=>s+x.checked,0);
+  const totalAll = subjects.reduce((s,x)=>s+x.total,0);
+  const overallPct = totalAll > 0 ? Math.round((totalChecked/totalAll)*100) : 0;
+  const dateStr = new Date().toLocaleDateString('bn-BD', {year:'numeric', month:'long', day:'numeric'});
+
+  const rowsHtml = subjects.map(s => {
+    const nodata = s.total === 0;
+    const color = statusColor(s.pct, s.total);
+    const pctLabel = nodata ? 'ডেটা নেই' : Math.round(s.pct*100) + '%';
+    const barPct = nodata ? 0 : Math.round(s.pct*100);
+    return `
+    <div class="row ${nodata ? 'nodata' : ''}">
+      <div class="seal ${nodata ? 'nodata' : ''}">
+        ${ring(s.pct, s.total, color)}
+        <div class="pct">${pctLabel}</div>
+      </div>
+      <div>
+        <div class="subject-name">${escapeHtml(s.title)}</div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${barPct}%; background:${color};"></div>
+        </div>
+        <div class="row-sub">${nodata ? 'এই বিষয়ে এখনো কোনো প্রশ্ন-বক্স যোগ করা হয়নি' : (s.pct>=1 ? 'সম্পূর্ণ' : s.pct<=0.2 ? 'বিশেষ মনোযোগ প্রয়োজন' : 'চলছে')}</div>
+      </div>
+      <div class="counts">
+        ${nodata ? '<span class="frac">—</span>' : `<span class="frac">${s.checked}/${s.total}</span>`}
+        <span class="lbl">সম্পন্ন</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="sheet">
+    <header class="report-head">
+      <h2>সিলেবাস অগ্রগতি রিপোর্ট</h2>
+      <div class="head-meta"><b>তারিখ:</b> ${dateStr}</div>
+    </header>
+    <div class="overall-line">
+      <span>সার্বিক অগ্রগতি (সব বিষয় মিলিয়ে)</span>
+      <span class="num">${totalChecked}/${totalAll} &nbsp;(${overallPct}%)</span>
+    </div>
+    <div class="rep-legend">
+      <span><i style="background:var(--attention)"></i>বিশেষ মনোযোগ প্রয়োজন</span>
+      <span><i style="background:var(--progress)"></i>চলছে</span>
+      <span><i style="background:var(--done)"></i>সম্পূর্ণ</span>
+      <span><i style="background:var(--muted)"></i>ডেটা নেই</span>
+    </div>
+    <div class="rows">${rowsHtml}</div>
+  </div>`;
+}
+
+function renderReport(){
+  document.getElementById('reportContent').innerHTML = buildReportMarkup();
+}
+
+/* ================= WEEKLY PROGRESS (month -> week) ================= */
+const WK_STORAGE_KEY = 'weekly_progress_months_v1';
+function wkId(){ return 'w' + Math.random().toString(36).slice(2,9); }
+
+const DEFAULT_ROUTINE_TEMPLATE = [
+  { day: "শনিবার", subjects: ["আরবি ১ম পত্র", "কুরআন", "বাংলা"] },
+  { day: "রবিবার", subjects: ["কম্পিউটার", "গণিত", "ইংরেজি"] },
+  { day: "সোমবার", subjects: ["ইংরেজি", "বাংলাদেশ ও বিশ্বপরিচয়", "বিজ্ঞান"] },
+  { day: "মঙ্গলবার", subjects: ["কুরআন", "আরবি ১ম পত্র", "আরবি ২য় পত্র"] },
+  { day: "বুধবার", subjects: ["গণিত", "বাংলাদেশ ও বিশ্বপরিচয়", "বিজ্ঞান"] },
+  { day: "বৃহস্পতিবার", subjects: ["আকাইদ", "বাংলা", "আরবি ২য় পত্র"] },
+];
+const SHORT_NAME = {
+  "আরবি ১ম পত্র": "আরবি১ম",
+  "আরবি ২য় পত্র": "আরবি২য়",
+  "কুরআন": "কুরআন",
+  "বাংলা": "বাংলা",
+  "কম্পিউটার": "কম্পিউ",
+  "গণিত": "গণিত",
+  "ইংরেজি": "ইংরেজি",
+  "বাংলাদেশ ও বিশ্বপরিচয়": "বাং-বিশ্ব",
+  "বিজ্ঞান": "বিজ্ঞান",
+  "আকাইদ": "আকাইদ",
+};
+function shortName(s){ return SHORT_NAME[s] || s; }
+
+function buildRoutineRows(){
+  return DEFAULT_ROUTINE_TEMPLATE.map(d => ({
+    day: d.day,
+    subjects: d.subjects.map(name => ({name, topic:'', progress:null, hw:null, attn:null, remark:''}))
+  }));
+}
+function newWeek(name){
+  return {
+    id: wkId(),
+    name: name || 'সপ্তাহ ১',
+    meta: { weekStart:'', weekEnd:'', classesHeld:'' },
+    notes: { strengths:'', weak:'', mock:'', plan:'' },
+    routine: buildRoutineRows(),
+  };
+}
+function newMonth(name){
+  return { id: wkId(), name: name || 'মাস ১', weeks: [newWeek('সপ্তাহ ১')] };
+}
+
+function loadWeeklyState(){
+  try{
+    const raw = localStorage.getItem(WK_STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(parsed && Array.isArray(parsed.months) && parsed.months.length) return parsed;
+    }
+  }catch(e){}
+  return { months:[newMonth('মাস ১')], activeMonthId:null, activeWeekId:null };
+}
+let weeklyState = loadWeeklyState();
+
+function ensureActiveIds(){
+  if(!weeklyState.months || !weeklyState.months.length) weeklyState.months = [newMonth('মাস ১')];
+  if(!weeklyState.columnLabels){
+    weeklyState.columnLabels = { subject:'বিষয়', topic:'আজকের টপিক', academic:'একাডেমিক', hw:'হোমওয়ার্ক', attn:'মনোযোগ', remark:'মন্তব্য' };
+  }
+  let m = weeklyState.months.find(x=>x.id===weeklyState.activeMonthId);
+  if(!m){ m = weeklyState.months[0]; weeklyState.activeMonthId = m.id; }
+  if(!m.weeks || !m.weeks.length) m.weeks = [newWeek('সপ্তাহ ১')];
+  let w = m.weeks.find(x=>x.id===weeklyState.activeWeekId);
+  if(!w){ w = m.weeks[0]; weeklyState.activeWeekId = w.id; }
+}
+ensureActiveIds();
+
+function saveWeekly(){ try{ localStorage.setItem(WK_STORAGE_KEY, JSON.stringify(weeklyState)); }catch(e){} }
+function getActiveMonth(){ ensureActiveIds(); return weeklyState.months.find(m=>m.id===weeklyState.activeMonthId); }
+function getActiveWeek(){ const m=getActiveMonth(); return m.weeks.find(w=>w.id===weeklyState.activeWeekId); }
+
+/* ---- month / week management ---- */
+function addMonth(){
+  const m = newMonth('মাস ' + (weeklyState.months.length + 1));
+  weeklyState.months.push(m);
+  weeklyState.activeMonthId = m.id;
+  weeklyState.activeWeekId = m.weeks[0].id;
+  saveWeekly(); renderWeekly();
+}
+function removeMonth(id){
+  if(weeklyState.months.length <= 1){ alert('অন্তত একটা মাস থাকতে হবে।'); return; }
+  if(!confirm('এই মাসটা এবং এর ভেতরের সব সপ্তাহের ডেটা মুছে ফেলতে চান?')) return;
+  weeklyState.months = weeklyState.months.filter(m=>m.id!==id);
+  if(weeklyState.activeMonthId === id){
+    weeklyState.activeMonthId = weeklyState.months[0].id;
+    weeklyState.activeWeekId = weeklyState.months[0].weeks[0].id;
+  }
+  saveWeekly(); renderWeekly();
+}
+function renameMonth(id, val){
+  const m = weeklyState.months.find(x=>x.id===id);
+  if(m){ m.name = val; saveWeekly(); }
+}
+function switchMonth(id){
+  if(weeklyState.activeMonthId === id) return;
+  weeklyState.activeMonthId = id;
+  const m = weeklyState.months.find(x=>x.id===id);
+  weeklyState.activeWeekId = m.weeks[0].id;
+  saveWeekly(); renderWeekly();
+}
+
+function addWeek(){
+  const m = getActiveMonth();
+  const w = newWeek('সপ্তাহ ' + (m.weeks.length + 1));
+  m.weeks.push(w);
+  weeklyState.activeWeekId = w.id;
+  saveWeekly(); renderWeekly();
+}
+function addNextWeek(){
+  const m = getActiveMonth();
+  const w = newWeek('সপ্তাহ ' + (m.weeks.length + 1));
+  m.weeks.push(w);
+  weeklyState.activeWeekId = w.id;
+  saveWeekly(); renderWeekly();
+}
+function removeWeek(id){
+  const m = getActiveMonth();
+  if(m.weeks.length <= 1){ alert('এই মাসে অন্তত একটা সপ্তাহ থাকতে হবে। পুরো মাসটা মুছতে চাইলে মাস চিপের ✕ চাপুন।'); return; }
+  if(!confirm('এই সপ্তাহের ডেটা মুছে ফেলতে চান?')) return;
+  m.weeks = m.weeks.filter(w=>w.id!==id);
+  if(weeklyState.activeWeekId === id) weeklyState.activeWeekId = m.weeks[0].id;
+  saveWeekly(); renderWeekly();
+}
+function renameWeek(id, val){
+  const m = getActiveMonth();
+  const w = m.weeks.find(x=>x.id===id);
+  if(w){ w.name = val; saveWeekly(); }
+}
+function switchWeek(id){
+  if(weeklyState.activeWeekId === id) return;
+  weeklyState.activeWeekId = id;
+  saveWeekly(); renderWeekly();
+}
+
+/* ---- edit mode toggle ---- */
+var editNamesMode = false;
+function toggleEditNames(){
+  editNamesMode = !editNamesMode;
+  var btn = document.getElementById('btnEditNames');
+  btn.classList.toggle('active', editNamesMode);
+  btn.textContent = editNamesMode ? '✓ সেভ করুন' : '✏️ নাম বদলান';
+  renderMonthChips();
+  renderWeekChips();
+  renderWeeklySheet();
+}
+
+/* ---- chips ---- */
+function renderMonthChips(){
+  const wrap = document.getElementById('monthChips');
+  wrap.innerHTML = '';
+  weeklyState.months.forEach(m => {
+    const chip = document.createElement('div');
+    chip.className = 'wk-chip' + (m.id===weeklyState.activeMonthId ? ' active' : '');
+    chip.onclick = () => switchMonth(m.id);
+    if(editNamesMode){
+      const inp = document.createElement('input');
+      inp.className = 'wk-chip-input';
+      inp.value = m.name;
+      inp.onclick = (e) => e.stopPropagation();
+      inp.oninput = (e) => renameMonth(m.id, e.target.value);
+      chip.appendChild(inp);
+      const del = document.createElement('button');
+      del.className = 'wk-chip-del';
+      del.textContent = '✕';
+      del.title = 'এই মাসটা মুছে ফেলুন';
+      del.onclick = (e) => { e.stopPropagation(); removeMonth(m.id); };
+      chip.appendChild(del);
+    } else {
+      const label = document.createElement('span');
+      label.style.cssText = 'font-family:inherit;font-size:12.5px;font-weight:600;color:inherit;';
+      label.textContent = m.name;
+      chip.appendChild(label);
+    }
+    wrap.appendChild(chip);
+  });
+}
+function renderWeekChips(){
+  const wrap = document.getElementById('weekChips');
+  wrap.innerHTML = '';
+  const m = getActiveMonth();
+  m.weeks.forEach(w => {
+    const chip = document.createElement('div');
+    chip.className = 'wk-chip' + (w.id===weeklyState.activeWeekId ? ' active' : '');
+    chip.onclick = () => switchWeek(w.id);
+    if(editNamesMode){
+      const inp = document.createElement('input');
+      inp.className = 'wk-chip-input';
+      inp.value = w.name;
+      inp.onclick = (e) => e.stopPropagation();
+      inp.oninput = (e) => renameWeek(w.id, e.target.value);
+      chip.appendChild(inp);
+      const del = document.createElement('button');
+      del.className = 'wk-chip-del';
+      del.textContent = '✕';
+      del.title = 'এই সপ্তাহটা মুছে ফেলুন';
+      del.onclick = (e) => { e.stopPropagation(); removeWeek(w.id); };
+      chip.appendChild(del);
+    } else {
+      const label = document.createElement('span');
+      label.style.cssText = 'font-family:inherit;font-size:12.5px;font-weight:600;color:inherit;';
+      label.textContent = w.name;
+      chip.appendChild(label);
+    }
+    wrap.appendChild(chip);
+  });
+}
+
+/* ---- scores / charts helpers (shared by live view + guardian export) ---- */
+function colorForScore(v){
+  if(v === null || v === undefined || isNaN(v)) return null;
+  const t = Math.max(0, Math.min(5, v)) / 5;
+  return `hsl(${t*142}, 68%, 45%)`;
+}
+function avgOf(vals){
+  const v = vals.filter(x => x !== null && x !== undefined);
+  if(!v.length) return null;
+  return v.reduce((a,b)=>a+b,0) / v.length;
+}
+function weekAllScores(week, field){
+  const arr = [];
+  week.routine.forEach(d => d.subjects.forEach(s => { if(s[field] !== null && s[field] !== undefined) arr.push(s[field]); }));
+  return arr;
+}
+function getDayScoresForWeek(week){
+  return week.routine.map(d => {
+    const vals = [];
+    d.subjects.forEach(s => { [s.progress, s.hw, s.attn].forEach(v => { if(v!==null && v!==undefined) vals.push(v); }); });
+    return { label: d.day, avg: vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null, subjects: d.subjects };
+  });
+}
+function miniBarSVG(items){
+  const w = 140, baseline = 78, maxH = 68, barW = 26;
+  const gap = (w - items.length * barW) / (items.length + 1);
+  let bars = '', labels = '';
+  items.forEach((it, i) => {
+    const x = gap + i * (barW + gap);
+    const val = it.value;
+    const color = colorForScore(val) || '#e4ddc9';
+    const h = val === null ? 2 : Math.max(2, (val/5) * maxH);
+    const y = baseline - h;
+    bars += `<rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="3" fill="${color}"></rect>`;
+    bars += `<text x="${x + barW/2}" y="${Math.max(9,y-4)}" font-size="9" text-anchor="middle" fill="#1f2a24">${val===null?'—':val}</text>`;
+    labels += `<text x="${x + barW/2}" y="91" font-size="8.3" text-anchor="middle" fill="#7a7364">${escapeHtml(it.name)}</text>`;
+  });
+  return `<svg class="wk-mini-svg" viewBox="0 0 ${w} 98"><line x1="0" y1="${baseline}" x2="${w}" y2="${baseline}" stroke="#e2ddd0"/>${bars}${labels}</svg>`;
+}
+function overviewSVGInner(dayScores){
+  const w = 480, baseline = 118, maxH = 100, barW = 48;
+  const n = dayScores.length;
+  const gap = (w - n*barW) / (n+1);
+  let bars = '', labels = '';
+  dayScores.forEach((d, i) => {
+    const x = gap + i*(barW+gap);
+    const val = d.avg;
+    const color = colorForScore(val) || '#e4ddc9';
+    const hgt = val === null ? 2 : Math.max(2, (val/5)*maxH);
+    const y = baseline - hgt;
+    bars += `<rect x="${x}" y="${y}" width="${barW}" height="${hgt}" rx="4" fill="${color}"></rect>`;
+    bars += `<text x="${x+barW/2}" y="${Math.max(12,y-6)}" font-size="11" text-anchor="middle" fill="#1f2a24">${val===null?'—':val.toFixed(1)}</text>`;
+    labels += `<text x="${x+barW/2}" y="134" font-size="10.5" text-anchor="middle" fill="#7a7364">${escapeHtml(d.label)}</text>`;
+  });
+  return `<line x1="0" y1="${baseline}" x2="${w}" y2="${baseline}" stroke="#e2ddd0"/>${bars}${labels}`;
+}
+
+/* ---- live editable rendering ---- */
+function scoreCellDOM(subjObj, field){
+  const wrap = document.createElement('div'); wrap.className = 'wk-score-wrap';
+  const inp = document.createElement('input');
+  inp.type = 'number'; inp.min = 0; inp.max = 5; inp.step = 1; inp.className = 'wk-score-input';
+  inp.value = (subjObj[field] === null || subjObj[field] === undefined) ? '' : subjObj[field];
+  const track = document.createElement('div'); track.className = 'wk-bar-track';
+  const fill = document.createElement('div'); fill.className = 'wk-bar-fill';
+  track.appendChild(fill);
+  function paint(){
+    const v = subjObj[field];
+    if(v === null || v === undefined){ fill.style.width = '0%'; fill.style.background = '#efece2'; }
+    else { fill.style.width = (v/5*100) + '%'; fill.style.background = colorForScore(v); }
+  }
+  paint();
+  inp.oninput = () => {
+    let v = inp.value === '' ? null : Math.max(0, Math.min(5, Number(inp.value)));
+    subjObj[field] = v;
+    paint();
+    saveWeekly();
+    updateWeekSummary();
+    renderWeekCharts();
+  };
+  wrap.append(inp, track);
+  return wrap;
+}
+function metaFieldDOM(label, placeholder, week, key){
+  const wrap = document.createElement('div'); wrap.className = 'wk-meta-field';
+  const lab = document.createElement('label'); lab.textContent = label;
+  const inp = document.createElement('input'); inp.type = 'text';
+  if(placeholder) inp.placeholder = placeholder;
+  inp.value = week.meta[key] || '';
+  inp.oninput = () => { week.meta[key] = inp.value; saveWeekly(); };
+  wrap.append(lab, inp);
+  return wrap;
+}
+
+/* ---- week date range: two native date pickers, with legacy weekRange fallback ---- */
+function formatDateBn(iso){
+  if(!iso) return '';
+  const d = new Date(iso + 'T00:00:00');
+  if(isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('bn-BD', {day:'numeric', month:'long'});
+}
+function weekRangeDisplay(week){
+  const m = week.meta;
+  const isLegacy = !m.weekStart && !m.weekEnd && m.weekRange;
+  if(isLegacy) return m.weekRange;
+  const s = formatDateBn(m.weekStart);
+  const e = formatDateBn(m.weekEnd);
+  if(s && e) return `${s} থেকে ${e}`;
+  if(s) return s;
+  if(e) return e;
+  return '';
+}
+function weekDateFieldsDOM(week){
+  const frag = document.createDocumentFragment();
+  const m = week.meta;
+  const isLegacy = !m.weekStart && !m.weekEnd && m.weekRange;
+  if(isLegacy){
+    const wrap = document.createElement('div'); wrap.className = 'wk-meta-field';
+    const lab = document.createElement('label'); lab.textContent = 'সপ্তাহ (তারিখ)';
+    const div = document.createElement('div'); div.textContent = m.weekRange || '—';
+    wrap.append(lab, div);
+    frag.appendChild(wrap);
+    return frag;
+  }
+  const startWrap = document.createElement('div'); startWrap.className = 'wk-meta-field';
+  const startLab = document.createElement('label'); startLab.textContent = 'শুরুর তারিখ';
+  const startInp = document.createElement('input'); startInp.type = 'date';
+  startInp.value = m.weekStart || '';
+  startInp.oninput = () => { m.weekStart = startInp.value; saveWeekly(); };
+  startWrap.append(startLab, startInp);
+
+  const endWrap = document.createElement('div'); endWrap.className = 'wk-meta-field';
+  const endLab = document.createElement('label'); endLab.textContent = 'শেষের তারিখ';
+  const endInp = document.createElement('input'); endInp.type = 'date';
+  endInp.value = m.weekEnd || '';
+  endInp.oninput = () => { m.weekEnd = endInp.value; saveWeekly(); };
+  endWrap.append(endLab, endInp);
+
+  frag.append(startWrap, endWrap);
+  return frag;
+}
+
+/* ---- total classes held: click-to-select chips (১-৬), Bengali numerals ---- */
+function classesHeldPickerDOM(week){
+  const wrap = document.createElement('div'); wrap.className = 'wk-meta-field';
+  const lab = document.createElement('label'); lab.textContent = 'মোট ক্লাস হয়েছে';
+  const row = document.createElement('div'); row.style.cssText = 'display:flex; gap:4px; flex-wrap:wrap; margin-top:2px;';
+  const nums = ['১','২','৩','৪','৫','৬'];
+  nums.forEach(n => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'wk-chip' + (week.meta.classesHeld === n ? ' active' : '');
+    chip.style.padding = '3px 11px';
+    chip.textContent = n;
+    chip.onclick = () => {
+      week.meta.classesHeld = n;
+      saveWeekly();
+      row.querySelectorAll('.wk-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+    };
+    row.appendChild(chip);
+  });
+  wrap.append(lab, row);
+  return wrap;
+}
+function noteFieldDOM(label, week, key){
+  const wrap = document.createElement('div'); wrap.className = 'field';
+  const lab = document.createElement('label'); lab.textContent = label;
+  const ta = document.createElement('textarea'); ta.placeholder = 'লিখুন...';
+  ta.value = week.notes[key] || '';
+  ta.oninput = () => { week.notes[key] = ta.value; saveWeekly(); };
+  wrap.append(lab, ta);
+  return wrap;
+}
+function renderWeekTableBody(week){
+  const tbody = document.createElement('tbody');
+  week.routine.forEach(dayObj => {
+    dayObj.subjects.forEach((subj, i) => {
+      const tr = document.createElement('tr');
+      if(i === 0) tr.className = 'wk-day-start';
+      const tdDay = document.createElement('td'); tdDay.className = 'wk-day-cell'; tdDay.textContent = i===0 ? dayObj.day : '';
+      const tdSubj = document.createElement('td'); tdSubj.className = 'wk-subject-cell';
+      if(editNamesMode){
+        const nameInp = document.createElement('input');
+        nameInp.type = 'text'; nameInp.className = 'wk-topic-input';
+        nameInp.value = subj.name || '';
+        nameInp.oninput = () => { subj.name = nameInp.value; saveWeekly(); };
+        tdSubj.appendChild(nameInp);
+      } else {
+        tdSubj.textContent = subj.name;
+      }
+      const tdTopic = document.createElement('td');
+      const topicInp = document.createElement('input'); topicInp.type='text'; topicInp.className='wk-topic-input'; topicInp.placeholder='টপিক লিখুন';
+      topicInp.value = subj.topic || '';
+      topicInp.oninput = () => { subj.topic = topicInp.value; saveWeekly(); };
+      tdTopic.appendChild(topicInp);
+      const tdProgress = document.createElement('td'); tdProgress.className='wk-score-cell'; tdProgress.appendChild(scoreCellDOM(subj,'progress'));
+      const tdHw = document.createElement('td'); tdHw.className='wk-score-cell'; tdHw.appendChild(scoreCellDOM(subj,'hw'));
+      const tdAttn = document.createElement('td'); tdAttn.className='wk-score-cell'; tdAttn.appendChild(scoreCellDOM(subj,'attn'));
+      const tdRemark = document.createElement('td');
+      const remarkInp = document.createElement('input'); remarkInp.type='text'; remarkInp.className='wk-remark-input'; remarkInp.placeholder='—';
+      remarkInp.value = subj.remark || '';
+      remarkInp.oninput = () => { subj.remark = remarkInp.value; saveWeekly(); };
+      tdRemark.appendChild(remarkInp);
+      tr.append(tdDay, tdSubj, tdTopic, tdProgress, tdHw, tdAttn, tdRemark);
+      tbody.appendChild(tr);
+    });
+  });
+  return tbody;
+}
+function updateWeekSummary(){
+  const week = getActiveWeek();
+  const box = document.getElementById('weekSummaryBox');
+  if(!box) return;
+  const fmt = v => v===null ? '—' : v.toFixed(1);
+  const progAvg = avgOf(weekAllScores(week,'progress'));
+  const hwAvg = avgOf(weekAllScores(week,'hw'));
+  const attnAvg = avgOf(weekAllScores(week,'attn'));
+  box.innerHTML = `
+    <div class="wk-stat"><div class="num">${fmt(progAvg)} / ৫</div><div class="lbl">গড় একাডেমিক অগ্রগতি</div></div>
+    <div class="wk-stat"><div class="num">${fmt(hwAvg)} / ৫</div><div class="lbl">গড় হোমওয়ার্ক মান</div></div>
+    <div class="wk-stat"><div class="num">${fmt(attnAvg)} / ৫</div><div class="lbl">গড় মনোযোগ</div></div>
+  `;
+}
+function renderWeekCharts(){
+  const week = getActiveWeek();
+  const dayScores = getDayScoresForWeek(week);
+  const wrap = document.getElementById('weekDayCharts');
+  if(!wrap) return;
+  wrap.innerHTML = dayScores.map(d => `
+    <div class="wk-day-chart-card">
+      <div class="wk-day-chart-title">${escapeHtml(d.label)}</div>
+      <div class="wk-mini-row">
+        <div class="wk-mini-block"><div class="wk-mini-label">একাডেমিক</div>${miniBarSVG(d.subjects.map(s=>({name:shortName(s.name), value:s.progress})))}</div>
+        <div class="wk-mini-block"><div class="wk-mini-label">হোমওয়ার্ক</div>${miniBarSVG(d.subjects.map(s=>({name:shortName(s.name), value:s.hw})))}</div>
+        <div class="wk-mini-block"><div class="wk-mini-label">মনোযোগ</div>${miniBarSVG(d.subjects.map(s=>({name:shortName(s.name), value:s.attn})))}</div>
+      </div>
+    </div>
+  `).join('');
+  const ov = document.getElementById('weekOverviewChart');
+  if(ov) ov.innerHTML = overviewSVGInner(dayScores);
+}
+/* ---- table header: editable column labels (reuses editNamesMode) ---- */
+function renderTableHead(){
+  const thead = document.createElement('thead');
+  const tr = document.createElement('tr');
+  const thDay = document.createElement('th'); thDay.style.width = '9%'; thDay.textContent = 'দিন';
+  tr.appendChild(thDay);
+
+  const cols = [
+    {key:'subject', width:'14%'},
+    {key:'topic', width:'18%'},
+    {key:'academic', cls:'wk-score-cell'},
+    {key:'hw', cls:'wk-score-cell'},
+    {key:'attn', cls:'wk-score-cell'},
+    {key:'remark', width:'16%'},
+  ];
+  cols.forEach(c => {
+    const th = document.createElement('th');
+    if(c.width) th.style.width = c.width;
+    if(c.cls) th.className = c.cls;
+    if(editNamesMode){
+      const inp = document.createElement('input');
+      inp.className = 'wk-chip-input th-label-input';
+      inp.value = weeklyState.columnLabels[c.key];
+      inp.oninput = () => { weeklyState.columnLabels[c.key] = inp.value; saveWeekly(); };
+      th.appendChild(inp);
+    } else {
+      th.textContent = weeklyState.columnLabels[c.key];
+    }
+    tr.appendChild(th);
+  });
+  thead.appendChild(tr);
+  return thead;
+}
+function renderWeeklySheet(){
+  const week = getActiveWeek();
+  const month = getActiveMonth();
+  const container = document.getElementById('weeklySheet');
+  container.innerHTML = '';
+
+  const sheet = document.createElement('div'); sheet.className = 'wk-sheet';
+
+  const head = document.createElement('div'); head.className = 'wk-head';
+  const eyebrow = document.createElement('p'); eyebrow.className = 'eyebrow'; eyebrow.textContent = `${month.name} — সাপ্তাহিক পড়াশোনার অগ্রগতি প্রতিবেদন`;
+  const h2 = document.createElement('h2'); h2.textContent = week.name;
+  head.append(eyebrow, h2);
+  sheet.appendChild(head);
+
+  const metaRow = document.createElement('div'); metaRow.className = 'wk-meta-row';
+  metaRow.appendChild(weekDateFieldsDOM(week));
+  metaRow.appendChild(classesHeldPickerDOM(week));
+  sheet.appendChild(metaRow);
+
+  const legend = document.createElement('div'); legend.className = 'wk-legend';
+  legend.innerHTML = `
+    <span><span class="swatch" style="background:#e5484d"></span>০-১ = খুবই দুর্বল</span>
+    <span><span class="swatch" style="background:#f0a83c"></span>২-৩ = মোটামুটি</span>
+    <span><span class="swatch" style="background:#30a46c"></span>৪-৫ = পুরোপুরি ভালো</span>
+    <span style="margin-left:auto;">স্কোর বাক্স (০-৫), বার নিজে থেকে রং বদলাবে</span>
+  `;
+  sheet.appendChild(legend);
+
+  const tableScroll = document.createElement('div'); tableScroll.className = 'wk-table-scroll';
+  const table = document.createElement('table'); table.className = 'wk-table';
+  table.appendChild(renderTableHead());
+  table.appendChild(renderWeekTableBody(week));
+  tableScroll.appendChild(table);
+  sheet.appendChild(tableScroll);
+  const scrollHint = document.createElement('div'); scrollHint.className = 'wk-scroll-hint';
+  scrollHint.textContent = '📱 সম্পূর্ণ টেবিল দেখতে পাশে স্ক্রল করুন (বাম/ডান) →';
+  sheet.appendChild(scrollHint);
+
+  const summaryBox = document.createElement('div'); summaryBox.className = 'wk-summary'; summaryBox.id = 'weekSummaryBox';
+  sheet.appendChild(summaryBox);
+
+  const notes = document.createElement('div'); notes.className = 'wk-notes';
+  notes.appendChild(noteFieldDOM('এই সপ্তাহের ভালো দিক', week, 'strengths'));
+  notes.appendChild(noteFieldDOM('দুর্বল জায়গা (পরের সপ্তাহে ফোকাস)', week, 'weak'));
+  notes.appendChild(noteFieldDOM('মক টেস্ট/কুইজ ফলাফল', week, 'mock'));
+  notes.appendChild(noteFieldDOM('পরের সপ্তাহের পরিকল্পনা', week, 'plan'));
+  sheet.appendChild(notes);
+
+  const chartsWrap = document.createElement('div'); chartsWrap.className = 'wk-charts';
+  chartsWrap.innerHTML = `<div class="wk-charts-title">প্রতিদিনের গ্রাফ (বিষয়ভিত্তিক তুলনা)</div><div class="wk-day-charts-grid" id="weekDayCharts"></div>
+    <div class="wk-overview-box"><div class="wk-overview-title">সাপ্তাহিক সামগ্রিক তুলনা (দিন অনুসারে)</div><svg id="weekOverviewChart" class="wk-overview-svg" viewBox="0 0 480 150"></svg></div>`;
+  sheet.appendChild(chartsWrap);
+
+  container.appendChild(sheet);
+
+  updateWeekSummary();
+  renderWeekCharts();
+}
+function renderWeekly(){
+  ensureActiveIds();
+  renderMonthChips();
+  renderWeekChips();
+  renderWeeklySheet();
+}
+
+/* ---- static (locked) markup for one week, used by guardian export ---- */
+function buildWeekSheetHTML(week, monthName){
+  const dayScores = getDayScoresForWeek(week);
+  function scoreStatic(v){
+    const color = colorForScore(v) || '#efece2';
+    const pct = (v===null||v===undefined) ? 0 : (v/5*100);
+    return `<div class="wk-score-wrap"><span style="font-weight:700;font-size:12px;min-width:14px;display:inline-block;text-align:center;">${v===null||v===undefined?'—':v}</span><div class="wk-bar-track"><div class="wk-bar-fill" style="width:${pct}%;background:${color};"></div></div></div>`;
+  }
+  const rows = week.routine.map(d => d.subjects.map((s,i) => `
+    <tr class="${i===0?'wk-day-start':''}">
+      <td class="wk-day-cell">${i===0?escapeHtml(d.day):''}</td>
+      <td class="wk-subject-cell">${escapeHtml(s.name)}</td>
+      <td>${escapeHtml(s.topic)||'—'}</td>
+      <td>${scoreStatic(s.progress)}</td>
+      <td>${scoreStatic(s.hw)}</td>
+      <td>${scoreStatic(s.attn)}</td>
+      <td>${escapeHtml(s.remark)||'—'}</td>
+    </tr>`).join('')).join('');
+
+  const fmt = v => v===null ? '—' : v.toFixed(1);
+  const progAvg = avgOf(weekAllScores(week,'progress'));
+  const hwAvg = avgOf(weekAllScores(week,'hw'));
+  const attnAvg = avgOf(weekAllScores(week,'attn'));
+
+  const dayChartsHtml = dayScores.map(d => `
+    <div class="wk-day-chart-card">
+      <div class="wk-day-chart-title">${escapeHtml(d.label)}</div>
+      <div class="wk-mini-row">
+        <div class="wk-mini-block"><div class="wk-mini-label">একাডেমিক</div>${miniBarSVG(d.subjects.map(s=>({name:shortName(s.name), value:s.progress})))}</div>
+        <div class="wk-mini-block"><div class="wk-mini-label">হোমওয়ার্ক</div>${miniBarSVG(d.subjects.map(s=>({name:shortName(s.name), value:s.hw})))}</div>
+        <div class="wk-mini-block"><div class="wk-mini-label">মনোযোগ</div>${miniBarSVG(d.subjects.map(s=>({name:shortName(s.name), value:s.attn})))}</div>
+      </div>
+    </div>`).join('');
+
+  const noteBox = (label, val) => `<div class="field"><label>${label}</label><div style="white-space:pre-wrap;border:1px solid var(--rep-line);border-radius:8px;padding:8px 10px;min-height:40px;background:#fdfcf9;font-size:13px;">${escapeHtml(val)||'—'}</div></div>`;
+
+  return `
+  <div class="wk-sheet" style="margin-bottom:22px;">
+    <div class="wk-head">
+      <p class="eyebrow">${escapeHtml(monthName)} — সাপ্তাহিক পড়াশোনার অগ্রগতি প্রতিবেদন</p>
+      <h2>${escapeHtml(week.name)}</h2>
+    </div>
+    <div class="wk-meta-row">
+      <div class="wk-meta-field"><label>সপ্তাহ (তারিখ)</label><div>${escapeHtml(weekRangeDisplay(week))||'—'}</div></div>
+      <div class="wk-meta-field"><label>মোট ক্লাস হয়েছে</label><div>${escapeHtml(week.meta.classesHeld)||'—'}</div></div>
+    </div>
+    <div class="wk-table-scroll">
+    <table class="wk-table">
+      <thead><tr><th style="width:9%;">দিন</th><th style="width:14%;">${escapeHtml(weeklyState.columnLabels.subject)}</th><th style="width:18%;">${escapeHtml(weeklyState.columnLabels.topic)}</th><th class="wk-score-cell">${escapeHtml(weeklyState.columnLabels.academic)}</th><th class="wk-score-cell">${escapeHtml(weeklyState.columnLabels.hw)}</th><th class="wk-score-cell">${escapeHtml(weeklyState.columnLabels.attn)}</th><th style="width:16%;">${escapeHtml(weeklyState.columnLabels.remark)}</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>
+    <div class="wk-scroll-hint">📱 সম্পূর্ণ টেবিল দেখতে পাশে স্ক্রল করুন (বাম/ডান) →</div>
+    <div class="wk-summary">
+      <div class="wk-stat"><div class="num">${fmt(progAvg)} / ৫</div><div class="lbl">গড় একাডেমিক অগ্রগতি</div></div>
+      <div class="wk-stat"><div class="num">${fmt(hwAvg)} / ৫</div><div class="lbl">গড় হোমওয়ার্ক মান</div></div>
+      <div class="wk-stat"><div class="num">${fmt(attnAvg)} / ৫</div><div class="lbl">গড় মনোযোগ</div></div>
+    </div>
+    <div class="wk-notes">
+      ${noteBox('এই সপ্তাহের ভালো দিক', week.notes.strengths)}
+      ${noteBox('দুর্বল জায়গা (পরের সপ্তাহে ফোকাস)', week.notes.weak)}
+      ${noteBox('মক টেস্ট/কুইজ ফলাফল', week.notes.mock)}
+      ${noteBox('পরের সপ্তাহের পরিকল্পনা', week.notes.plan)}
+    </div>
+    <div class="wk-charts">
+      <div class="wk-charts-title">প্রতিদিনের গ্রাফ (বিষয়ভিত্তিক তুলনা)</div>
+      <div class="wk-day-charts-grid">${dayChartsHtml}</div>
+      <div class="wk-overview-box"><div class="wk-overview-title">সাপ্তাহিক সামগ্রিক তুলনা (দিন অনুসারে)</div><svg class="wk-overview-svg" viewBox="0 0 480 150">${overviewSVGInner(dayScores)}</svg></div>
+    </div>
+  </div>`;
+}
+
+/* ================= Backup export / import (weekly + checklist together) ================= */
+function fullExportObject(){
+  return { app: 'student_progress_report', version: 3, checklist: data, weekly: weeklyState, studentInfo: studentInfo };
+}
+function exportJSON(){
+  const blob = new Blob([JSON.stringify(fullExportObject(), null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `student_progress_backup_${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function loadImportedData(parsed){
+  if(Array.isArray(parsed)){
+    if(!confirm('এই ফাইলে শুধু চেকলিস্টের ডেটা আছে (পুরোনো ফরম্যাট)। বর্তমান চেকলিস্ট বদলে এটা বসানো হবে, সাপ্তাহিক প্রতিবেদন অপরিবর্তিত থাকবে। এগোতে চান?')) return;
+    data = parsed;
+    save(); renderChecklist(); if(activeTab==='report') renderReport();
+    return;
+  }
+  if(parsed && typeof parsed === 'object' && (parsed.checklist || parsed.weekly)){
+    if(!confirm('বর্তমান সব ডেটার (সাপ্তাহিক প্রতিবেদন + চেকলিস্ট) বদলে এই ইমপোর্ট করা ডেটা বসানো হবে। এগোতে চান?')) return;
+    if(Array.isArray(parsed.checklist)){ data = parsed.checklist; save(); }
+    if(parsed.weekly && Array.isArray(parsed.weekly.months)){ weeklyState = parsed.weekly; saveWeekly(); }
+    if(parsed.studentInfo && typeof parsed.studentInfo === 'object'){
+      studentInfo = Object.assign({studentName:'', classInfo:'', schoolName:'', teacherName:''}, parsed.studentInfo);
+      saveStudentInfo(); renderStudentInfo();
+    }
+    ensureActiveIds();
+    renderChecklist();
+    renderWeekly();
+    if(activeTab==='report') renderReport();
+    return;
+  }
+  alert('এই ফাইলটা সঠিক ফরম্যাটে নেই।');
+}
+
+document.getElementById('fileInput').onchange = (e) => {
+  const f = e.target.files[0];
+  if(!f) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try { loadImportedData(JSON.parse(ev.target.result)); }
+    catch(err){ alert('JSON ফাইলটি পড়া যায়নি।'); }
+  };
+  reader.readAsText(f);
+  e.target.value = '';
+};
+
+document.getElementById('togglePaste').onclick = () => {
+  const w = document.getElementById('pasteWrap');
+  w.style.display = w.style.display === 'none' || !w.style.display ? 'block' : 'none';
+};
+
+function importFromPaste(){
+  const raw = document.getElementById('pasteArea').value.trim();
+  if(!raw) return;
+  try {
+    loadImportedData(JSON.parse(raw));
+    document.getElementById('pasteWrap').style.display = 'none';
+  } catch(err){
+    alert('পেস্ট করা লেখাটি বৈধ JSON নয়।');
+  }
+}
+
+/* ================= Guardian: standalone, view-only file (all 3 sections) ================= */
+function shareFullReportForGuardian(){
+  const btn = document.getElementById('guardianShareBtn');
+  const originalLabel = btn ? btn.textContent : '';
+  if(btn){ btn.disabled = true; btn.textContent = 'তৈরি হচ্ছে...'; }
+
+  try{
+    const stamp = new Date().toISOString().slice(0,10);
+    const dateStr = new Date().toLocaleDateString('bn-BD', {year:'numeric', month:'long', day:'numeric'});
+    const reportHtml = buildReportMarkup();
+    const checklistHtml = buildLockedChecklistHTML();
+
+    // Pre-render all week sheets with data attributes for navigation
+    let weekSheetsHtml = '';
+    let monthChipsHtml = '';
+    let isFirstMonth = true;
+    weeklyState.months.forEach((m, mi) => {
+      const isActive = mi === 0;
+      monthChipsHtml += `<span class="wk-chip${isActive?' active':''}" data-month="${m.id}" onclick="gShowMonth('${m.id}')">${escapeHtml(m.name)}</span>`;
+      m.weeks.forEach((w, wi) => {
+        const isActiveWeek = isActive && wi === 0;
+        weekSheetsHtml += `<div class="g-week-sheet" data-month="${m.id}" data-week="${w.id}" style="display:${isActiveWeek?'block':'none'};">
+${buildWeekSheetHTML(w, m.name)}</div>`;
+      });
+    });
+
+    // Build week chip containers per month
+    let weekChipsHtml = '';
+    weeklyState.months.forEach((m, mi) => {
+      const isActive = mi === 0;
+      let chips = '';
+      m.weeks.forEach((w, wi) => {
+        chips += `<span class="wk-chip${isActive && wi===0?' active':''}" data-month="${m.id}" data-week="${w.id}" onclick="gShowWeek('${w.id}')">${escapeHtml(w.name)}</span>`;
+      });
+      weekChipsHtml += `<div class="g-week-chips-group" data-month="${m.id}" style="display:${isActive?'flex':'none'}">${chips}</div>`;
+    });
+
+    const styleContent = document.querySelector('style').innerHTML;
+
+    const standalone = `<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>শিক্ষার্থীর অগ্রগতি রিপোর্ট — দেখার কপি</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Tiro+Bangla&display=swap" rel="stylesheet">
+<style>${styleContent}
+.locked-tag{font-size:11.5px;color:var(--muted);background:#eef6f1;border:1px solid #cfe3d8;border-radius:6px;padding:8px 12px;margin-bottom:16px;}
+input, textarea, .wk-chip-del{display:none !important;}
+.wk-meta-field input{display:none !important;}
+.wk-chip{cursor:pointer;user-select:none;}
+.wk-chip.active{border-color:var(--accent);background:var(--accent);}
+.wk-chip.active .wk-chip-input{color:#fff;}
+.wk-chip.active span{color:#fff;}
+.g-week-chips-group{display:flex;gap:6px;flex-wrap:wrap;}
+.g-collapse-btn{font-family:inherit; font-size:11px; font-weight:600; color:var(--accent); background:none; border:1.5px solid var(--accent); border-radius:12px; padding:2px 10px; cursor:pointer; margin-left:12px; white-space:nowrap; transition:background .15s;}
+.g-collapse-btn:hover{background:var(--accent); color:#fff;}
+.g-collapse-content{display:none;}
+.g-collapse-content.expanded{display:block;}
+.student-info-panel .student-info-field div{font-size:13.5px;font-weight:500;color:var(--ink);padding:4px 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>শিক্ষার্থীর অগ্রগতি রিপোর্ট</h1>
+  <p class="sub">দেখার কপি — তারিখ: ${dateStr}</p>
+  <div class="locked-tag">এটি একটি স্ন্যাপশট — এই মুহূর্তের অগ্রগতি দেখাচ্ছে (সব মাস ও সপ্তাহসহ)। এখানে কিছু পরিবর্তন করা যাবে না, শুধু দেখা যাবে।</div>
+
+  <div class="student-info-panel">
+    <h3>শিক্ষার্থীর তথ্য</h3>
+    <div class="student-info-row">
+      <div class="student-info-field"><label>শিক্ষার্থীর নাম</label><div>${escapeHtml(studentInfo.studentName)||'—'}</div></div>
+      <div class="student-info-field"><label>শ্রেণি</label><div>${escapeHtml(studentInfo.classInfo)||'—'}</div></div>
+      <div class="student-info-field"><label>বিদ্যালয়ের নাম</label><div>${escapeHtml(studentInfo.schoolName)||'—'}</div></div>
+      <div class="student-info-field"><label>শিক্ষকের নাম</label><div>${escapeHtml(studentInfo.teacherName)||'—'}</div></div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tabWeeklyBtn" onclick="gSwitch('weekly')">📅 সাপ্তাহিক অগ্রগতি প্রতিবেদন</button>
+    <button class="tab-btn" id="tabChecklistBtn" onclick="gSwitch('checklist')">✅ চেকলিস্ট</button>
+    <button class="tab-btn" id="tabReportBtn" onclick="gSwitch('report')">📊 সিলেবাস অগ্রগতি রিপোর্ট</button>
+  </div>
+
+  <div id="weeklyView">
+    <div class="wk-toolbar">
+      <div class="wk-level">
+        <span class="wk-level-label">মাস:</span>
+        <div class="wk-chips">${monthChipsHtml}</div>
+      </div>
+      <div class="wk-level">
+        <span class="wk-level-label">সপ্তাহ:</span>
+        <div class="wk-chips">${weekChipsHtml}</div>
+      </div>
+    </div>
+    <div class="wk-sheet-wrap">${weekSheetsHtml}</div>
+  </div>
+  <div id="checklistView" style="display:none;">
+    <div class="legend">
+      <span><span class="dot" style="background:#e5484d"></span>শুরু হয়নি</span>
+      <span><span class="dot" style="background:#f0a83c"></span>চলছে</span>
+      <span><span class="dot" style="background:#30a46c"></span>সম্পূর্ণ</span>
+      <span><span class="dot" style="background:#d9d4c4"></span>কোনো বক্স নেই</span>
+    </div>
+    <div id="tree">${checklistHtml}</div>
+  </div>
+  <div id="reportView" style="display:none;">${reportHtml}</div>
+</div>
+<script>
+function gSwitch(tab){
+  document.getElementById('tabWeeklyBtn').classList.toggle('active', tab==='weekly');
+  document.getElementById('tabChecklistBtn').classList.toggle('active', tab==='checklist');
+  document.getElementById('tabReportBtn').classList.toggle('active', tab==='report');
+  document.getElementById('weeklyView').style.display = tab==='weekly' ? 'block' : 'none';
+  document.getElementById('checklistView').style.display = tab==='checklist' ? 'block' : 'none';
+  document.getElementById('reportView').style.display = tab==='report' ? 'block' : 'none';
+}
+function gShowMonth(mid){
+  var sheets = document.querySelectorAll('.g-week-sheet');
+  sheets.forEach(function(el){ el.style.display = el.getAttribute('data-month')===mid ? 'block' : 'none'; });
+  var chips = document.querySelectorAll('.wk-chip[data-month]');
+  chips.forEach(function(el){ el.classList.toggle('active', el.getAttribute('data-month')===mid); });
+  var groups = document.querySelectorAll('.g-week-chips-group');
+  groups.forEach(function(el){ el.style.display = el.getAttribute('data-month')===mid ? 'flex' : 'none'; });
+}
+function gShowWeek(wid){
+  var sheets = document.querySelectorAll('.g-week-sheet');
+  sheets.forEach(function(el){ el.style.display = el.getAttribute('data-week')===wid ? 'block' : 'none'; });
+  var chips = document.querySelectorAll('.wk-chip[data-week]');
+  chips.forEach(function(el){ el.classList.toggle('active', el.getAttribute('data-week')===wid); });
+}
+function gToggleCollapse(btn){
+  var content = btn.parentElement.parentElement.querySelector('.g-collapse-content');
+  if(!content) return;
+  var isExpanded = content.classList.contains('expanded');
+  if(isExpanded){
+    content.classList.remove('expanded');
+    btn.textContent = '\u25B6 \u09AC\u09BF\u09B8\u09CD\u09A4\u09BE\u09B0\u09BF\u09A4 \u09A6\u09C7\u0996\u09C1\u09A8';
+  } else {
+    content.classList.add('expanded');
+    btn.textContent = '\u25BC \u09B8\u0982\u0995\u09C1\u099A\u09BF\u09A4 \u0995\u09B0\u09C1\u09A8';
+  }
+}
+<\/script>
+</body>
+</html>`;
+
+    const blob = new Blob([standalone], {type:'text/html'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `student_progress_report_guardian_view_${stamp}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } finally {
+    if(btn){ btn.disabled = false; btn.textContent = originalLabel; }
+  }
+}
+
+/* ================= Student Info ================= */
+function renderStudentInfo(){
+  document.getElementById('siStudentName').value = studentInfo.studentName || '';
+  document.getElementById('siClassInfo').value = studentInfo.classInfo || '';
+  document.getElementById('siSchoolName').value = studentInfo.schoolName || '';
+  document.getElementById('siTeacherName').value = studentInfo.teacherName || '';
+}
+['siStudentName','siClassInfo','siSchoolName','siTeacherName'].forEach(function(id){
+  document.getElementById(id).oninput = function(){
+    var key = id.replace('si','').replace('Name','Name').replace('Info','ClassInfo').replace('SchoolName','schoolName').replace('TeacherName','teacherName');
+    if(id==='siStudentName') studentInfo.studentName = this.value;
+    else if(id==='siClassInfo') studentInfo.classInfo = this.value;
+    else if(id==='siSchoolName') studentInfo.schoolName = this.value;
+    else if(id==='siTeacherName') studentInfo.teacherName = this.value;
+    saveStudentInfo();
+  };
+});
+
+/* ================= init ================= */
+renderChecklist();
+renderWeekly();
+renderStudentInfo();
+switchTab('weekly');
+</script>
+</body>
+</html>
