@@ -1,4 +1,4 @@
-const CACHE_NAME = 'student-progress-v1';
+const CACHE_NAME = 'student-progress-v2';
 const FILES_TO_CACHE = [
   './',
   './index.html',
@@ -24,9 +24,22 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  // The app's HTML page: always try the network first so updates show up
+  // right away. Only fall back to the cached copy if there's no internet.
+  if (req.mode === 'navigate' || req.destination === 'document') {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, res.clone()));
+          return res;
+        })
+        .catch(() => caches.match(req).then((cached) => cached || caches.match('./index.html')))
+    );
+    return;
+  }
+  // Icons/manifest change rarely, so cache-first is fine (and faster) for those.
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      return cached || fetch(event.request);
-    })
+    caches.match(req).then((cached) => cached || fetch(req))
   );
 });
