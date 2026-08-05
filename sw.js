@@ -1,4 +1,4 @@
-const CACHE_NAME = 'student-progress-v2';
+const CACHE_NAME = 'student-progress-v3';
 const FILES_TO_CACHE = [
   './',
   './index.html',
@@ -31,7 +31,11 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(req)
         .then((res) => {
-          caches.open(CACHE_NAME).then((cache) => cache.put(req, res.clone()));
+          // Clone synchronously, right here, before any async gap —
+          // otherwise the response body may already be consumed by the
+          // time the async caches.open() promise resolves.
+          const resToCache = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, resToCache));
           return res;
         })
         .catch(() => caches.match(req).then((cached) => cached || caches.match('./index.html')))
