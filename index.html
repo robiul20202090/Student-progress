@@ -47,6 +47,16 @@
   .legend .dot{width:11px;height:11px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle;}
 
   .top-actions{margin-bottom:10px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .cloud-sync-bar{
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    margin-bottom:12px; padding:7px 12px; border:1px solid var(--line);
+    border-radius:8px; background:#fff; font-size:12px; color:var(--muted);
+  }
+  .cloud-sync-bar .dot{width:8px; height:8px; border-radius:50%; background:#d9d4c4; flex:none;}
+  .cloud-sync-bar .dot.ok{background:#30a46c;}
+  .cloud-sync-bar .dot.busy{background:#f0a83c;}
+  .cloud-sync-bar .dot.err{background:#e5484d;}
+  .cloud-sync-bar .email{color:var(--ink); font-weight:500;}
   .btn{
     border:1.5px solid var(--accent); background:#fff; color:var(--accent);
     font-family:inherit; font-size:12.5px; font-weight:600; padding:6px 12px;
@@ -250,7 +260,7 @@
 
   @media print{
     body{padding:0; background:#fff;}
-    .tabs, .top-actions, .paste-wrap, .legend, .wk-toolbar{display:none !important;}
+    .tabs, .top-actions, .paste-wrap, .legend, .wk-toolbar, .cloud-sync-bar{display:none !important;}
     #reportView .sheet{box-shadow:none; border:none;}
     .wk-sheet{box-shadow:none; border:none;}
   }
@@ -260,6 +270,13 @@
 <div class="wrap">
   <h1>শিক্ষার্থীর অগ্রগতি রিপোর্ট</h1>
   <p class="sub">প্রথমে সাপ্তাহিক অগ্রগতি প্রতিবেদন, তারপর সিলেবাস চেকলিস্ট, এবং সবশেষে সিলেবাস অগ্রগতি রিপোর্ট — একই জায়গায়।</p>
+
+  <div class="cloud-sync-bar" id="cloudSyncBar">
+    <span class="dot" id="cloudSyncDot"></span>
+    <span id="cloudSyncStatus">ক্লাউড ব্যাকআপ: সাইন-ইন করা হয়নি</span>
+    <button class="btn ghost small" id="cloudSignInBtn" onclick="cloudSignIn()">🔐 Google দিয়ে সাইন-ইন করুন</button>
+    <button class="btn ghost small" id="cloudSignOutBtn" onclick="cloudSignOut()" style="display:none;">সাইন-আউট</button>
+  </div>
 
   <div class="top-actions">
     <button class="btn" id="guardianShareBtn" onclick="shareFullReportForGuardian()">📤 অভিভাবকের জন্য সম্পূর্ণ রিপোর্ট শেয়ার করুন</button>
@@ -358,6 +375,11 @@ const STORAGE_KEY = 'syllabus_checklist_tree_v1';
 const STUDENT_INFO_KEY = 'student_info_v1';
 let activeTab = 'weekly';
 
+/* ================= cloud sync hook (Firebase logic lives in the module script below) ================= */
+function notifyCloudSync(){
+  if(window.queueCloudSync && !window.__cloudApplyingRemote) window.queueCloudSync();
+}
+
 let studentInfo;
 try {
   const raw = localStorage.getItem(STUDENT_INFO_KEY);
@@ -365,7 +387,7 @@ try {
 } catch(e){
   studentInfo = {studentName:'', classInfo:'', schoolName:'', teacherName:''};
 }
-function saveStudentInfo(){ try{ localStorage.setItem(STUDENT_INFO_KEY, JSON.stringify(studentInfo)); }catch(e){} }
+function saveStudentInfo(){ try{ localStorage.setItem(STUDENT_INFO_KEY, JSON.stringify(studentInfo)); }catch(e){} notifyCloudSync(); }
 
 function switchTab(tab){
   activeTab = tab;
@@ -454,6 +476,7 @@ try {
 
 function save(){
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e){}
+  notifyCloudSync();
 }
 
 function findNode(list, id){
@@ -871,7 +894,7 @@ function ensureActiveIds(){
 }
 ensureActiveIds();
 
-function saveWeekly(){ try{ localStorage.setItem(WK_STORAGE_KEY, JSON.stringify(weeklyState)); }catch(e){} }
+function saveWeekly(){ try{ localStorage.setItem(WK_STORAGE_KEY, JSON.stringify(weeklyState)); }catch(e){} notifyCloudSync(); }
 function getActiveMonth(){ ensureActiveIds(); return weeklyState.months.find(m=>m.id===weeklyState.activeMonthId); }
 function getActiveWeek(){ const m=getActiveMonth(); return m.weeks.find(w=>w.id===weeklyState.activeWeekId); }
 
@@ -1673,6 +1696,26 @@ function renderStudentInfo(){
   };
 });
 
+/* ================= apply data pulled from cloud (called by the Firebase module script) ================= */
+function applyCloudPulledData(parsed){
+  window.__cloudApplyingRemote = true;
+  try{
+    if(Array.isArray(parsed.checklist)){ data = parsed.checklist; save(); }
+    if(parsed.weekly && Array.isArray(parsed.weekly.months)){ weeklyState = parsed.weekly; saveWeekly(); }
+    if(parsed.studentInfo && typeof parsed.studentInfo === 'object'){
+      studentInfo = Object.assign({studentName:'', classInfo:'', schoolName:'', teacherName:''}, parsed.studentInfo);
+      saveStudentInfo();
+    }
+    ensureActiveIds();
+    renderChecklist();
+    renderWeekly();
+    renderStudentInfo();
+    if(activeTab==='report') renderReport();
+  } finally {
+    window.__cloudApplyingRemote = false;
+  }
+}
+
 /* ================= init ================= */
 renderChecklist();
 renderWeekly();
@@ -1683,6 +1726,129 @@ if('serviceWorker' in navigator){
     navigator.serviceWorker.register('sw.js').catch(() => {});
   });
 }
+</script>
+
+<!-- ================= Cloud backup (Firebase: Google সাইন-ইন + Firestore) ================= -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, setDoc, onSnapshot, enableIndexedDbPersistence
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCt8yb3UuQEGn098pbfS2zCJeX-q7gqPlU",
+  authDomain: "student-progress-report-7ed9a.firebaseapp.com",
+  projectId: "student-progress-report-7ed9a",
+  storageBucket: "student-progress-report-7ed9a.firebasestorage.app",
+  messagingSenderId: "170035343031",
+  appId: "1:170035343031:web:259410f0dee1dad0536732"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const auth = getAuth(fbApp);
+const db = getFirestore(fbApp);
+try { enableIndexedDbPersistence(db); } catch(e){ /* multiple tabs open, or unsupported browser — safe to ignore */ }
+
+let currentUser = null;
+let unsubscribeSnapshot = null;
+let lastAppliedSavedAt = null; // savedAt value currently reflected in local storage
+let cloudSyncTimer = null;
+
+const dotEl = document.getElementById('cloudSyncDot');
+const statusEl = document.getElementById('cloudSyncStatus');
+const signInBtn = document.getElementById('cloudSignInBtn');
+const signOutBtn = document.getElementById('cloudSignOutBtn');
+
+function setSyncStatus(state, text){
+  dotEl.className = 'dot' + (state ? ' ' + state : '');
+  statusEl.textContent = text;
+}
+
+window.cloudSignIn = function(){
+  setSyncStatus('busy', 'সাইন-ইন হচ্ছে...');
+  signInWithPopup(auth, new GoogleAuthProvider()).catch(() => {
+    setSyncStatus('err', 'সাইন-ইন ব্যর্থ হয়েছে — আবার চেষ্টা করুন');
+  });
+};
+
+window.cloudSignOut = function(){
+  if(unsubscribeSnapshot){ unsubscribeSnapshot(); unsubscribeSnapshot = null; }
+  signOut(auth);
+};
+
+window.queueCloudSync = function(){
+  if(!currentUser) return;
+  clearTimeout(cloudSyncTimer);
+  setSyncStatus('busy', 'পরিবর্তন সংরক্ষণের অপেক্ষায়...');
+  cloudSyncTimer = setTimeout(pushToCloud, 1500);
+};
+
+async function pushToCloud(){
+  if(!currentUser) return;
+  const savedAt = new Date().toISOString();
+  const payload = Object.assign({ savedAt, updatedBy: currentUser.uid }, window.fullExportObject());
+  lastAppliedSavedAt = savedAt;
+  setSyncStatus('busy', 'ক্লাউডে সংরক্ষণ হচ্ছে...');
+  try {
+    await setDoc(doc(db, 'syncData', currentUser.uid), payload);
+    setSyncStatus('ok', 'সব পরিবর্তন ক্লাউডে সংরক্ষিত ✓');
+  } catch(e){
+    setSyncStatus('err', 'সিঙ্ক ব্যর্থ — ইন্টারনেট সংযোগ পরীক্ষা করুন');
+  }
+}
+
+function startListening(uid){
+  const ref = doc(db, 'syncData', uid);
+  unsubscribeSnapshot = onSnapshot(ref, (snap) => {
+    if(!snap.exists()) return;
+    const remote = snap.data();
+    if(!remote.savedAt || remote.savedAt === lastAppliedSavedAt) return; // our own write echoing back, or already applied
+    lastAppliedSavedAt = remote.savedAt;
+    window.applyCloudPulledData(remote);
+    setSyncStatus('ok', 'অন্য ডিভাইস থেকে সর্বশেষ তথ্য পাওয়া গেছে ✓');
+  }, () => {
+    setSyncStatus('err', 'ক্লাউড থেকে তথ্য আনতে ব্যর্থ');
+  });
+}
+
+async function initialSyncOnSignIn(uid){
+  setSyncStatus('busy', 'ক্লাউডের সাথে মেলানো হচ্ছে...');
+  try{
+    const ref = doc(db, 'syncData', uid);
+    const snap = await getDoc(ref);
+    if(!snap.exists()){
+      // no cloud backup yet — push this device's current data as the first backup
+      await pushToCloud();
+    } else {
+      const remote = snap.data();
+      lastAppliedSavedAt = remote.savedAt || null;
+      window.applyCloudPulledData(remote);
+      setSyncStatus('ok', 'ক্লাউড ব্যাকআপ থেকে তথ্য লোড হয়েছে ✓');
+    }
+  } catch(e){
+    setSyncStatus('err', 'প্রথম সিঙ্কে সমস্যা হয়েছে — ইন্টারনেট পরীক্ষা করুন');
+  }
+  startListening(uid);
+}
+
+onAuthStateChanged(auth, (user) => {
+  currentUser = user;
+  if(user){
+    signInBtn.style.display = 'none';
+    signOutBtn.style.display = '';
+    statusEl.innerHTML = '<span class="email">' + (user.email || 'সাইন-ইন করা হয়েছে') + '</span>';
+    initialSyncOnSignIn(user.uid);
+  } else {
+    if(unsubscribeSnapshot){ unsubscribeSnapshot(); unsubscribeSnapshot = null; }
+    lastAppliedSavedAt = null;
+    signInBtn.style.display = '';
+    signOutBtn.style.display = 'none';
+    setSyncStatus('', 'ক্লাউড ব্যাকআপ: সাইন-ইন করা হয়নি');
+  }
+});
 </script>
 </body>
 </html>
