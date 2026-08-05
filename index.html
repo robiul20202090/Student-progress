@@ -273,6 +273,7 @@
 
   <div class="cloud-sync-bar" id="cloudSyncBar">
     <span class="dot" id="cloudSyncDot"></span>
+    <span class="email" id="cloudUserEmail" style="display:none;"></span>
     <span id="cloudSyncStatus">ক্লাউড ব্যাকআপ: সাইন-ইন করা হয়নি</span>
     <button class="btn ghost small" id="cloudSignInBtn" onclick="cloudSignIn()">🔐 Google দিয়ে সাইন-ইন করুন</button>
     <button class="btn ghost small" id="cloudSignOutBtn" onclick="cloudSignOut()" style="display:none;">সাইন-আউট</button>
@@ -1759,6 +1760,7 @@ let cloudSyncTimer = null;
 
 const dotEl = document.getElementById('cloudSyncDot');
 const statusEl = document.getElementById('cloudSyncStatus');
+const emailEl = document.getElementById('cloudUserEmail');
 const signInBtn = document.getElementById('cloudSignInBtn');
 const signOutBtn = document.getElementById('cloudSignOutBtn');
 
@@ -1839,13 +1841,16 @@ onAuthStateChanged(auth, (user) => {
   if(user){
     signInBtn.style.display = 'none';
     signOutBtn.style.display = '';
-    statusEl.innerHTML = '<span class="email">' + (user.email || 'সাইন-ইন করা হয়েছে') + '</span>';
+    emailEl.textContent = user.email || 'সাইন-ইন করা হয়েছে';
+    emailEl.style.display = '';
     initialSyncOnSignIn(user.uid);
   } else {
     if(unsubscribeSnapshot){ unsubscribeSnapshot(); unsubscribeSnapshot = null; }
     lastAppliedSavedAt = null;
     signInBtn.style.display = '';
     signOutBtn.style.display = 'none';
+    emailEl.style.display = 'none';
+    emailEl.textContent = '';
     setSyncStatus('', 'ক্লাউড ব্যাকআপ: সাইন-ইন করা হয়নি');
   }
 });
