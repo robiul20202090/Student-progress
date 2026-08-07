@@ -19,6 +19,28 @@
     --done:#2f7d5f; --progress:#b8863a; --attention:#b23a2e;
   }
   *{box-sizing:border-box;}
+  /* Feature 1: Welcome Overlay */
+  .welcome-overlay {
+    position: fixed; inset: 0; background: rgba(31,42,36,0.98);
+    z-index: 9999; display: flex; align-items: center; justify-content: center;
+    padding: 20px; color: #fff; text-align: center; backdrop-filter: blur(5px);
+  }
+  .welcome-card {
+    background: var(--panel); color: var(--ink); width: 100%; max-width: 480px;
+    border-radius: 20px; padding: 32px 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+  }
+  .welcome-card h2 { font-family: 'Tiro Bangla', serif; font-size: 28px; color: var(--accent); margin: 0 0 24px; }
+  .welcome-section { background: #f8f6f0; border-radius: 14px; padding: 20px; margin-bottom: 16px; border: 1px solid var(--line); }
+  .welcome-section h3 { font-size: 18px; margin: 0 0 8px; color: var(--accent); }
+  .welcome-section p { font-size: 13px; color: var(--muted); margin: 0 0 16px; }
+  .welcome-card .btn { width: 100%; padding: 12px; font-size: 15px; margin-bottom: 8px; }
+  .welcome-card .btn.ghost { border-color: var(--line); color: var(--muted); }
+  .welcome-footer { font-size: 12px; color: var(--muted); margin-top: 20px; }
+  .welcome-room-input {
+    width: 100%; padding: 10px; border: 1.5px solid var(--line); border-radius: 8px;
+    margin-bottom: 10px; text-align: center; font-family: monospace; font-size: 16px;
+  }
+  .welcome-room-input:focus { outline: none; border-color: var(--accent); }
   body{
     margin:0; background:var(--paper); font-family:'Hind Siliguri',sans-serif;
     color:var(--ink); padding:24px 14px 80px;
@@ -268,6 +290,29 @@
 </head>
 <body>
 <div class="wrap">
+  <!-- Feature 1: Welcome Overlay -->
+  <div id="welcomeScreen" class="welcome-overlay" style="display:none;">
+    <div class="welcome-card">
+      <h2>আপনি কি শিক্ষক নাকি অভিভাবক?</h2>
+      <div class="welcome-section">
+        <h3>আমি শিক্ষক</h3>
+        <p>প্রতিবেদন তৈরি ও পরিচালনা করবেন</p>
+        <button class="btn" onclick="cloudSignIn()">🔐 Google দিয়ে সাইন-ইন করুন</button>
+        <div style="font-size: 11px; color: var(--muted); margin-bottom: 12px;">সাইন-ইন করলে আপনার নাম ও ইমেইল শিক্ষকের কাছে দেখা যাবে</div>
+        <button class="btn ghost" onclick="closeWelcome()">গেস্ট হিসেবে চালিয়ে যান</button>
+      </div>
+      <div class="welcome-section">
+        <h3>আমি অভিভাবক</h3>
+        <p>শিক্ষকের পাঠানো লিংক দিয়ে সন্তানের অগ্রগতি দেখবেন</p>
+        <input type="text" id="welcomeRoomCode" class="welcome-room-input" placeholder="রুম কোড দিন (যেমন: abc123xyz)">
+        <button class="btn" onclick="enterRoomFromWelcome()">প্রবেশ করুন</button>
+      </div>
+      <div class="welcome-footer">
+        পরে যেকোনো সময় উপরের বার থেকে সাইন-ইন করতে পারবেন
+      </div>
+    </div>
+  </div>
+
   <h1>শিক্ষার্থীর অগ্রগতি রিপোর্ট</h1>
   <p class="sub">প্রথমে সাপ্তাহিক অগ্রগতি প্রতিবেদন, তারপর সিলেবাস চেকলিস্ট, এবং সবশেষে সিলেবাস অগ্রগতি রিপোর্ট — একই জায়গায়।</p>
 
@@ -1717,6 +1762,75 @@ function applyCloudPulledData(parsed){
   }
 }
 
+/* Feature 1: Welcome Overlay functions */
+function closeWelcome(){
+  document.getElementById('welcomeScreen').style.display = 'none';
+}
+function enterRoomFromWelcome(){
+  const code = document.getElementById('welcomeRoomCode').value.trim();
+  if(!code){ alert('অনুগ্রহ করে রুম কোড দিন।'); return; }
+  window.location.search = '?room=' + code;
+}
+
+/* Feature 2: Guardian Room */
+window.setupLiveRoomUI = function(code){
+  const btn = document.getElementById('liveRoomBtn');
+  if(!code) { btn.style.display = 'none'; return; }
+  btn.style.display = 'block';
+  btn.onclick = () => {
+    const url = window.location.origin + window.location.pathname + '?room=' + code;
+    navigator.clipboard.writeText(url).then(() => {
+      alert('অভিভাবকের লাইভ লিংক কপি করা হয়েছে:\n' + url);
+    });
+  };
+};
+
+/* Feature 3: Admin & Block */
+function toggleAdminPanel(){
+  const panel = document.getElementById('adminPanel');
+  const isShowing = panel.style.display === 'block';
+  panel.style.display = isShowing ? 'none' : 'block';
+  if(!isShowing && window.fetchUserDirectory) window.fetchUserDirectory();
+}
+
+window.renderAdminUserList = function(users){
+  const container = document.getElementById('adminUserList');
+  if(!users || users.length === 0){
+    container.innerHTML = '<p>কোনো ব্যবহারকারী পাওয়া যায়নি।</p>';
+    return;
+  }
+  let html = `<table style="width:100%; border-collapse:collapse; font-size:13px;">
+    <thead><tr style="text-align:left; border-bottom:2px solid #eee;">
+      <th style="padding:8px;">নাম ও ইমেইল</th><th style="padding:8px;">শেষ সক্রিয়</th><th style="padding:8px;">অ্যাকশন</th>
+    </tr></thead><tbody>`;
+  users.forEach(u => {
+    const lastActive = new Date(u.lastActive).toLocaleString('bn-BD');
+    html += `<tr style="border-bottom:1px solid #eee;">
+      <td style="padding:8px;"><b>${u.name}</b><br><span style="color:#666; font-size:11px;">${u.email}</span></td>
+      <td style="padding:8px;">${lastActive}</td>
+      <td style="padding:8px;">
+        <button class="btn small ${u.isBlocked ? '' : 'danger'}" onclick="window.adminToggleBlock('${u.uid}', ${!u.isBlocked})">
+          ${u.isBlocked ? 'আনব্লক' : 'ব্লক'}
+        </button>
+      </td>
+    </tr>`;
+  });
+  html += `</tbody></table>`;
+  container.innerHTML = html;
+};
+
+window.showBlockedScreen = function(){
+  document.body.innerHTML = `
+    <div style="height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:20px; font-family:sans-serif; background:#faf8f3;">
+      <div style="background:#fff; padding:40px; border-radius:20px; box-shadow:0 10px 30px rgba(0,0,0,0.1); max-width:400px;">
+        <h1 style="color:#b23a2e; font-size:48px; margin:0 0 20px;">🚫</h1>
+        <h2 style="color:var(--ink); font-family:'Tiro Bangla',serif; margin-bottom:16px;">অ্যাক্সেস বন্ধ</h2>
+        <p style="font-size:16px; color:#555; line-height:1.6;">আপনার অ্যাক্সেস সাময়িকভাবে বন্ধ করা হয়েছে।<br>বিস্তারিত জানতে অ্যাডমিনের সাথে যোগাযোগ করুন।</p>
+      </div>
+    </div>
+  `;
+};
+
 /* ================= init ================= */
 renderChecklist();
 renderWeekly();
@@ -1736,7 +1850,8 @@ import {
   getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  getFirestore, doc, getDoc, setDoc, onSnapshot, enableIndexedDbPersistence
+  getFirestore, doc, getDoc, setDoc, onSnapshot, enableIndexedDbPersistence,
+  collection, getDocs, deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -1754,6 +1869,33 @@ const db = getFirestore(fbApp);
 try { enableIndexedDbPersistence(db); } catch(e){ /* multiple tabs open, or unsupported browser — safe to ignore */ }
 
 let currentUser = null;
+
+// Guardian Room Logic
+const urlParams = new URLSearchParams(window.location.search);
+const roomCode = urlParams.get('room');
+if(roomCode){
+  document.getElementById('cloudSyncBar').style.display = 'none';
+  document.getElementById('welcomeScreen').style.display = 'none';
+  const topActions = document.querySelector('.top-actions');
+  if(topActions) topActions.style.display = 'none';
+  
+  const roomRef = doc(db, 'rooms', roomCode);
+  getDoc(roomRef).then(snap => {
+    if(snap.exists()){
+      const remote = snap.data();
+      window.applyCloudPulledData(remote);
+      setTimeout(() => {
+        document.querySelectorAll('input, textarea, .btn, .qbox, .wk-chip-del').forEach(el => {
+          if(!el.classList.contains('tab-btn')) el.style.pointerEvents = 'none';
+        });
+        const sub = document.querySelector('.sub');
+        if(sub) sub.textContent = 'অভিভাবক মোড (শুধু দেখার জন্য) — সর্বশেষ আপডেট: ' + new Date(remote.pushedAt).toLocaleString('bn-BD');
+      }, 500);
+    } else {
+      alert('রুমটি খুঁজে পাওয়া যায়নি। কোডটি সঠিক কিনা যাচাই করুন।');
+    }
+  });
+}
 let unsubscribeSnapshot = null;
 let lastAppliedSavedAt = null; // savedAt value currently reflected in local storage
 let cloudSyncTimer = null;
@@ -1788,6 +1930,55 @@ window.queueCloudSync = function(){
   cloudSyncTimer = setTimeout(pushToCloud, 1500);
 };
 
+async function writeUserDirectory(user){
+  try {
+    await setDoc(doc(db, 'userDirectory', user.uid), {
+      name: user.displayName || 'অজানা ব্যবহারকারী',
+      email: user.email,
+      lastActive: new Date().toISOString()
+    });
+  } catch(e) {}
+}
+
+async function checkIfBlocked(uid){
+  try {
+    const snap = await getDoc(doc(db, 'blockedUsers', uid));
+    if(snap.exists()){
+      window.showBlockedScreen();
+      return true;
+    }
+  } catch(e) {}
+  return false;
+}
+
+let userRoomCode = null;
+async function ensureRoomCode(uid){
+  try {
+    const ref = doc(db, 'syncData', uid);
+    const snap = await getDoc(ref);
+    let code = null;
+    if(snap.exists() && snap.data().roomCode){
+      code = snap.data().roomCode;
+    } else {
+      code = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
+      await setDoc(ref, { roomCode: code }, { merge: true });
+    }
+    userRoomCode = code;
+    window.setupLiveRoomUI(userRoomCode);
+  } catch(e) {}
+}
+
+async function pushRoomData(){
+  if(!userRoomCode || !currentUser) return;
+  try {
+    const payload = Object.assign({ 
+      ownerUid: currentUser.uid,
+      pushedAt: new Date().toISOString()
+    }, window.fullExportObject());
+    await setDoc(doc(db, 'rooms', userRoomCode), payload);
+  } catch(e) {}
+}
+
 async function pushToCloud(){
   if(!currentUser) return;
   const savedAt = new Date().toISOString();
@@ -1796,11 +1987,35 @@ async function pushToCloud(){
   setSyncStatus('busy', 'ক্লাউডে সংরক্ষণ হচ্ছে...');
   try {
     await setDoc(doc(db, 'syncData', currentUser.uid), payload);
+    await pushRoomData();
     setSyncStatus('ok', 'সব পরিবর্তন ক্লাউডে সংরক্ষিত ✓');
   } catch(e){
     setSyncStatus('err', 'সিঙ্ক ব্যর্থ — ইন্টারনেট সংযোগ পরীক্ষা করুন');
   }
 }
+
+window.fetchUserDirectory = async function(){
+  if(!currentUser || currentUser.email !== 'robiul20202090@gmail.com') return;
+  try {
+    const usersSnap = await getDocs(collection(db, 'userDirectory'));
+    const blockedSnap = await getDocs(collection(db, 'blockedUsers'));
+    const blockedIds = new Set(blockedSnap.docs.map(d => d.id));
+    const users = usersSnap.docs
+      .map(d => ({ uid: d.id, ...d.data(), isBlocked: blockedIds.has(d.id) }))
+      .filter(u => u.email !== 'robiul20202090@gmail.com')
+      .sort((a, b) => new Date(b.lastActive) - new Date(a.lastActive));
+    window.renderAdminUserList(users);
+  } catch(e) { alert('ইউজার ডিরেক্টরি লোড করতে ব্যর্থ।'); }
+};
+
+window.adminToggleBlock = async function(uid, shouldBlock){
+  if(!currentUser || currentUser.email !== 'robiul20202090@gmail.com') return;
+  try {
+    if(shouldBlock) await setDoc(doc(db, 'blockedUsers', uid), { blockedAt: new Date().toISOString() });
+    else await deleteDoc(doc(db, 'blockedUsers', uid));
+    window.fetchUserDirectory();
+  } catch(e) { alert('অপারেশন ব্যর্থ।'); }
+};
 
 function startListening(uid){
   const ref = doc(db, 'syncData', uid);
@@ -1816,13 +2031,16 @@ function startListening(uid){
   });
 }
 
-async function initialSyncOnSignIn(uid){
+async function initialSyncOnSignIn(user){
+  const isBlocked = await checkIfBlocked(user.uid);
+  if(isBlocked) return;
+  await writeUserDirectory(user);
+  await ensureRoomCode(user.uid);
   setSyncStatus('busy', 'ক্লাউডের সাথে মেলানো হচ্ছে...');
   try{
-    const ref = doc(db, 'syncData', uid);
+    const ref = doc(db, 'syncData', user.uid);
     const snap = await getDoc(ref);
     if(!snap.exists()){
-      // no cloud backup yet — push this device's current data as the first backup
       await pushToCloud();
     } else {
       const remote = snap.data();
@@ -1833,17 +2051,23 @@ async function initialSyncOnSignIn(uid){
   } catch(e){
     setSyncStatus('err', 'প্রথম সিঙ্কে সমস্যা হয়েছে — ইন্টারনেট পরীক্ষা করুন');
   }
-  startListening(uid);
+  startListening(user.uid);
 }
 
 onAuthStateChanged(auth, (user) => {
   currentUser = user;
+  const urlParams = new URLSearchParams(window.location.search);
+  const roomCode = urlParams.get('room');
   if(user){
+    document.getElementById('welcomeScreen').style.display = 'none';
     signInBtn.style.display = 'none';
     signOutBtn.style.display = '';
     emailEl.textContent = user.email || 'সাইন-ইন করা হয়েছে';
     emailEl.style.display = '';
-    initialSyncOnSignIn(user.uid);
+    if(user.email === 'robiul20202090@gmail.com') {
+      document.getElementById('adminControlBtn').style.display = 'inline-block';
+    }
+    initialSyncOnSignIn(user);
   } else {
     if(unsubscribeSnapshot){ unsubscribeSnapshot(); unsubscribeSnapshot = null; }
     lastAppliedSavedAt = null;
@@ -1851,7 +2075,11 @@ onAuthStateChanged(auth, (user) => {
     signOutBtn.style.display = 'none';
     emailEl.style.display = 'none';
     emailEl.textContent = '';
+    document.getElementById('adminControlBtn').style.display = 'none';
     setSyncStatus('', 'ক্লাউড ব্যাকআপ: সাইন-ইন করা হয়নি');
+    if(!roomCode){
+      document.getElementById('welcomeScreen').style.display = 'flex';
+    }
   }
 });
 </script>
