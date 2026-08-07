@@ -322,6 +322,25 @@
     <span id="cloudSyncStatus">ক্লাউড ব্যাকআপ: সাইন-ইন করা হয়নি</span>
     <button class="btn ghost small" id="cloudSignInBtn" onclick="cloudSignIn()">🔐 Google দিয়ে সাইন-ইন করুন</button>
     <button class="btn ghost small" id="cloudSignOutBtn" onclick="cloudSignOut()" style="display:none;">সাইন-আউট</button>
+    <button class="btn ghost small" id="adminControlBtn" onclick="toggleAdminPanel()" style="display:none;">🛠️ কন্ট্রোল</button>
+  </div>
+
+  <!-- Feature 3: Blocked screen -->
+  <div id="blockedScreen" style="display:none; position:fixed; inset:0; background:#faf8f3; z-index:9999; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:20px;">
+    <div style="font-size:48px; margin-bottom:16px;">🔒</div>
+    <h2 style="font-family:'Tiro Bangla',serif; color:#b23a2e; margin:0 0 12px;">অ্যাক্সেস বন্ধ</h2>
+    <p style="font-size:16px; color:#555; line-height:1.6;">আপনার অ্যাক্সেস সাময়িকভাবে বন্ধ করা হয়েছে।<br>বিস্তারিত জানতে অ্যাডমিনের সাথে যোগাযোগ করুন।</p>
+  </div>
+
+  <!-- Feature 3: Admin panel -->
+  <div id="adminPanel" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9998; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:14px; padding:24px; max-width:600px; width:90%; max-height:80vh; overflow-y:auto;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h2 style="margin:0; font-family:'Tiro Bangla',serif; font-size:20px;">🛠️ কন্ট্রোল প্যানেল</h2>
+        <button class="btn ghost small" onclick="toggleAdminPanel()">✕ বন্ধ করুন</button>
+      </div>
+      <div id="adminUserList"><p style="color:#888;">লোড হচ্ছে...</p></div>
+    </div>
   </div>
 
   <div class="top-actions">
@@ -1788,8 +1807,8 @@ window.setupLiveRoomUI = function(code){
 /* Feature 3: Admin & Block */
 function toggleAdminPanel(){
   const panel = document.getElementById('adminPanel');
-  const isShowing = panel.style.display === 'block';
-  panel.style.display = isShowing ? 'none' : 'block';
+  const isShowing = panel.style.display === 'flex';
+  panel.style.display = isShowing ? 'none' : 'flex';
   if(!isShowing && window.fetchUserDirectory) window.fetchUserDirectory();
 }
 
