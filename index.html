@@ -1898,22 +1898,121 @@ if(roomCode){
   document.getElementById('welcomeScreen').style.display = 'none';
   const topActions = document.querySelector('.top-actions');
   if(topActions) topActions.style.display = 'none';
-  
+
   const roomRef = doc(db, 'rooms', roomCode);
   getDoc(roomRef).then(snap => {
     if(snap.exists()){
       const remote = snap.data();
-      window.applyCloudPulledData(remote);
-      setTimeout(() => {
-        document.querySelectorAll('input, textarea, .btn, .qbox, .wk-chip-del').forEach(el => {
-          if(!el.classList.contains('tab-btn')) el.style.pointerEvents = 'none';
+      // Load data into local state silently
+      window.__cloudApplyingRemote = true;
+      try{
+        if(Array.isArray(remote.checklist)) window.__guardianData = remote;
+        if(remote.weekly && Array.isArray(remote.weekly.months)){
+          weeklyState = remote.weekly;
+          ensureActiveIds();
+        }
+        if(remote.studentInfo) studentInfo = Object.assign({studentName:'',classInfo:'',schoolName:'',teacherName:''}, remote.studentInfo);
+      } finally { window.__cloudApplyingRemote = false; }
+
+      // Build locked guardian view exactly like the file export
+      const updatedAt = remote.pushedAt ? new Date(remote.pushedAt).toLocaleString('bn-BD') : '—';
+
+      let monthChipsHtml = '';
+      let weekSheetsHtml = '';
+      let weekChipsHtml = '';
+
+      weeklyState.months.forEach((m, mi) => {
+        const isActive = mi === 0;
+        monthChipsHtml += `<span class="wk-chip${isActive?' active':''}" data-month="${m.id}" onclick="gShowMonth('${m.id}')">${escapeHtml(m.name)}</span>`;
+        m.weeks.forEach((w, wi) => {
+          const isActiveWeek = isActive && wi === 0;
+          weekSheetsHtml += `<div class="g-week-sheet" data-month="${m.id}" data-week="${w.id}" style="display:${isActiveWeek?'block':'none'};">${buildWeekSheetHTML(w, m.name)}</div>`;
         });
-        const sub = document.querySelector('.sub');
-        if(sub) sub.textContent = 'অভিভাবক মোড (শুধু দেখার জন্য) — সর্বশেষ আপডেট: ' + new Date(remote.pushedAt).toLocaleString('bn-BD');
-      }, 500);
+      });
+
+      weeklyState.months.forEach((m, mi) => {
+        const isActive = mi === 0;
+        let chips = '';
+        m.weeks.forEach((w, wi) => {
+          chips += `<span class="wk-chip${isActive && wi===0?' active':''}" data-month="${m.id}" data-week="${w.id}" onclick="gShowWeek('${w.id}')">${escapeHtml(w.name)}</span>`;
+        });
+        weekChipsHtml += `<div class="g-week-chips-group" data-month="${m.id}" style="display:${isActive?'flex':'none'}">${chips}</div>`;
+      });
+
+      const checklistHtml = Array.isArray(remote.checklist)
+        ? (()=>{ const tmp = data; data = remote.checklist; const h = buildLockedChecklistHTML(); data = tmp; return h; })()
+        : buildLockedChecklistHTML();
+
+      const reportHtml = Array.isArray(remote.checklist)
+        ? (()=>{ const tmp = data; data = remote.checklist; const h = buildReportMarkup(); data = tmp; return h; })()
+        : buildReportMarkup();
+
+      // Replace entire page body with locked guardian view
+      document.querySelector('.wrap').innerHTML = `
+        <h1>শিক্ষার্থীর অগ্রগতি রিপোর্ট</h1>
+        <p class="sub">অভিভাবক মোড (শুধু দেখার জন্য) — সর্বশেষ আপডেট: ${updatedAt}</p>
+        <div style="font-size:11.5px;color:var(--muted);background:#eef6f1;border:1px solid #cfe3d8;border-radius:6px;padding:8px 12px;margin-bottom:16px;">
+          এটি একটি লাইভ ভিউ — শিক্ষক যখনই আপডেট করবেন, এখানে দেখা যাবে। কিছু পরিবর্তন করা যাবে না, শুধু দেখা যাবে।
+        </div>
+        <div class="student-info-panel">
+          <h3>শিক্ষার্থীর তথ্য</h3>
+          <div class="student-info-row">
+            <div class="student-info-field"><label>শিক্ষার্থীর নাম</label><div style="font-size:13.5px;font-weight:500;color:var(--ink);padding:4px 0;">${escapeHtml(studentInfo.studentName)||'—'}</div></div>
+            <div class="student-info-field"><label>শ্রেণি</label><div style="font-size:13.5px;font-weight:500;color:var(--ink);padding:4px 0;">${escapeHtml(studentInfo.classInfo)||'—'}</div></div>
+            <div class="student-info-field"><label>বিদ্যালয়ের নাম</label><div style="font-size:13.5px;font-weight:500;color:var(--ink);padding:4px 0;">${escapeHtml(studentInfo.schoolName)||'—'}</div></div>
+            <div class="student-info-field"><label>শিক্ষকের নাম</label><div style="font-size:13.5px;font-weight:500;color:var(--ink);padding:4px 0;">${escapeHtml(studentInfo.teacherName)||'—'}</div></div>
+          </div>
+        </div>
+        <div class="tabs">
+          <button class="tab-btn active" id="tabWeeklyBtn" onclick="gSwitch('weekly')">📅 সাপ্তাহিক অগ্রগতি প্রতিবেদন</button>
+          <button class="tab-btn" id="tabChecklistBtn" onclick="gSwitch('checklist')">✅ চেকলিস্ট</button>
+          <button class="tab-btn" id="tabReportBtn" onclick="gSwitch('report')">📊 সিলেবাস অগ্রগতি রিপোর্ট</button>
+        </div>
+        <div id="weeklyView">
+          <div class="wk-toolbar">
+            <div class="wk-level">
+              <span class="wk-level-label">মাস:</span>
+              <div class="wk-chips">${monthChipsHtml}</div>
+            </div>
+            <div class="wk-level">
+              <span class="wk-level-label">সপ্তাহ:</span>
+              <div class="wk-chips">${weekChipsHtml}</div>
+            </div>
+          </div>
+          <div class="wk-sheet-wrap">${weekSheetsHtml}</div>
+        </div>
+        <div id="checklistView" style="display:none;">
+          <div class="legend">
+            <span><span class="dot" style="background:#e5484d"></span>শুরু হয়নি</span>
+            <span><span class="dot" style="background:#f0a83c"></span>চলছে</span>
+            <span><span class="dot" style="background:#30a46c"></span>সম্পূর্ণ</span>
+            <span><span class="dot" style="background:#d9d4c4"></span>কোনো বক্স নেই</span>
+          </div>
+          <div id="tree">${checklistHtml}</div>
+        </div>
+        <div id="reportView" style="display:none;">${reportHtml}</div>
+      `;
+
+      // Add CSS to hide all edit controls
+      const style = document.createElement('style');
+      style.textContent = `
+        input:not(.tab-btn), textarea, .wk-chip-del, .node-actions, .btn-edit-toggle { display:none !important; }
+        .wk-chip { cursor:pointer; user-select:none; }
+        .wk-chip.active { border-color:var(--accent); background:var(--accent); }
+        .wk-chip.active span { color:#fff; }
+        .g-week-chips-group { display:flex; gap:6px; flex-wrap:wrap; }
+        .g-collapse-btn { font-family:inherit; font-size:11px; font-weight:600; color:var(--accent); background:none; border:1.5px solid var(--accent); border-radius:12px; padding:2px 10px; cursor:pointer; margin-left:12px; white-space:nowrap; }
+        .g-collapse-btn:hover { background:var(--accent); color:#fff; }
+        .g-collapse-content { display:none; }
+        .g-collapse-content.expanded { display:block; }
+      `;
+      document.head.appendChild(style);
+
     } else {
       alert('রুমটি খুঁজে পাওয়া যায়নি। কোডটি সঠিক কিনা যাচাই করুন।');
     }
+  }).catch(() => {
+    alert('রুমের তথ্য লোড করতে ব্যর্থ। ইন্টারনেট সংযোগ পরীক্ষা করুন।');
   });
 }
 let unsubscribeSnapshot = null;
