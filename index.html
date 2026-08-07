@@ -1985,6 +1985,8 @@ async function ensureRoomCode(uid){
     }
     userRoomCode = code;
     window.setupLiveRoomUI(userRoomCode);
+    // Push room data immediately on sign-in so guardian link works right away
+    await pushRoomData();
   } catch(e) {}
 }
 
