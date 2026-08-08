@@ -1762,6 +1762,37 @@ function renderStudentInfo(){
   };
 });
 
+/* ================= Guardian navigation functions (used by live room view) ================= */
+function gSwitch(tab){
+  document.getElementById('tabWeeklyBtn').classList.toggle('active', tab==='weekly');
+  document.getElementById('tabChecklistBtn').classList.toggle('active', tab==='checklist');
+  document.getElementById('tabReportBtn').classList.toggle('active', tab==='report');
+  document.getElementById('weeklyView').style.display = tab==='weekly' ? 'block' : 'none';
+  document.getElementById('checklistView').style.display = tab==='checklist' ? 'block' : 'none';
+  document.getElementById('reportView').style.display = tab==='report' ? 'block' : 'none';
+}
+function gShowMonth(mid){
+  document.querySelectorAll('.g-week-sheet').forEach(function(el){ el.style.display = el.getAttribute('data-month')===mid ? 'block' : 'none'; });
+  document.querySelectorAll('.wk-chip[data-month]').forEach(function(el){ el.classList.toggle('active', el.getAttribute('data-month')===mid); });
+  document.querySelectorAll('.g-week-chips-group').forEach(function(el){ el.style.display = el.getAttribute('data-month')===mid ? 'flex' : 'none'; });
+}
+function gShowWeek(wid){
+  document.querySelectorAll('.g-week-sheet').forEach(function(el){ el.style.display = el.getAttribute('data-week')===wid ? 'block' : 'none'; });
+  document.querySelectorAll('.wk-chip[data-week]').forEach(function(el){ el.classList.toggle('active', el.getAttribute('data-week')===wid); });
+}
+function gToggleCollapse(btn){
+  var content = btn.parentElement.parentElement.querySelector('.g-collapse-content');
+  if(!content) return;
+  var isExpanded = content.classList.contains('expanded');
+  if(isExpanded){
+    content.classList.remove('expanded');
+    btn.textContent = '\u25B6 \u09AC\u09BF\u09B8\u09CD\u09A4\u09BE\u09B0\u09BF\u09A4 \u09A6\u09C7\u0996\u09C1\u09A8';
+  } else {
+    content.classList.add('expanded');
+    btn.textContent = '\u25BC \u09B8\u0982\u0995\u09C1\u099A\u09BF\u09A4 \u0995\u09B0\u09C1\u09A8';
+  }
+}
+
 /* ================= apply data pulled from cloud (called by the Firebase module script) ================= */
 function applyCloudPulledData(parsed){
   window.__cloudApplyingRemote = true;
@@ -1796,12 +1827,29 @@ function enterRoomFromWelcome(){
 window.setupLiveRoomUI = function(code){
   const btn = document.getElementById('liveRoomBtn');
   if(!code) { btn.style.display = 'none'; return; }
-  btn.style.display = 'block';
+  btn.style.display = 'inline-block';
   btn.onclick = () => {
     const url = window.location.origin + window.location.pathname + '?room=' + code;
-    navigator.clipboard.writeText(url).then(() => {
-      alert('অভিভাবকের লাইভ লিংক কপি করা হয়েছে:\n' + url);
-    });
+    const existing = document.getElementById('liveRoomBox');
+    if(existing){ existing.remove(); return; }
+    const box = document.createElement('div');
+    box.id = 'liveRoomBox';
+    box.style.cssText = 'background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-top:10px;font-size:13px;';
+    box.innerHTML = `
+      <div style="margin-bottom:10px;">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">অভিভাবকের জয়েন কোড</div>
+        <div style="font-size:28px;font-weight:700;letter-spacing:6px;color:var(--accent);font-family:'Tiro Bangla',serif;">${code}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">অভিভাবক এই কোডটি স্বাগতম স্ক্রিনে দিয়ে প্রবেশ করবেন</div>
+      </div>
+      <div style="border-top:1px solid var(--line);padding-top:10px;">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">অথবা সরাসরি লিংক শেয়ার করুন</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <div style="font-size:11px;background:#f5f3ee;border-radius:6px;padding:5px 8px;flex:1;word-break:break-all;color:var(--ink);">${url}</div>
+          <button class="btn small" onclick="navigator.clipboard.writeText('${url}').then(()=>{ this.textContent='✓ কপি হয়েছে'; setTimeout(()=>this.textContent='লিংক কপি করুন',2000); })">লিংক কপি করুন</button>
+        </div>
+      </div>
+    `;
+    btn.parentElement.appendChild(box);
   };
 };
 
@@ -2079,7 +2127,7 @@ async function ensureRoomCode(uid){
     if(snap.exists() && snap.data().roomCode){
       code = snap.data().roomCode;
     } else {
-      code = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
+      code = Math.floor(100000 + Math.random() * 900000).toString();
       await setDoc(ref, { roomCode: code }, { merge: true });
     }
     userRoomCode = code;
